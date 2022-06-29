@@ -8,7 +8,6 @@ export class AppController {
   @Get()
   @Header('Content-Type', 'arraybuffer')
   async getHello() {
-    const data = await this.appService.getHello();
-    return data;
+    return await this.appService.getHello();
   }
 }

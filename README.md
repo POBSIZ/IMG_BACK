@@ -1,73 +1,74 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# **IMG_BACK**
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+> **이미지 어학원 웹앱 BACK**
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+<br/>
 
-## Description
+# 커밋 컨벤션
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Feat**: 새로운 기능을 추가할 경우
+- **Fix**: 버그를 고친 경우
+- **Design**: CSS 등 사용자 UI 디자인 변경
+- **!BREAKING CHANGE**: 커다란 API 변경의 경우
+- **!HOTFIX**: 급하게 치명적인 버그를 고쳐야하는 경우
+- **Style**: 코드 포맷 변경, 세미 콜론 누락, 코드 수정이 없는 경우
+- **Refactor**: 프로덕션 코드 리팩토링
+- **Comment**: 필요한 주석 추가 및 변경
+- **Docs**: 문서를 수정한 경우
+- **Test**: 테스트 추가, 테스트 리팩토링(프로덕션 코드 변경 X)
+- **Chore**: 빌드 테스트 업데이트, 패키지 매니저를 설정하는 경우(프로덕션 코드 변경 X)
+- **Rename**: 파일 혹은 폴더명을 수정하거나 옮기는 작업만인 경우
+- **Remove**: 파일을 삭제하는 작업만 수행한 경우
+- **출처**: https://overcome-the-limits.tistory.com/6?category=923736
 
-## Installation
+<br/>
 
-```bash
-$ npm install
+# 코드 컨벤션
+
+1. **함수**
+2. **타입**
+3. **변수**
+4. **파일**
+
+<br/>
+
+### **함수**
+
+함수명의 경우 Camel Case를 활용하여 작성한다.<br/>
+함수명의 첫 글자는 무조건 소문자로 작성한다.<br/>
+기본적으로 Arrow Function으로 작성한다.<br/>
+redux-saga에서의 함수는 function 키워드를 이용하여 작성한다.<br/>
+
+```typescript
+// Base
+const baseFunc = () => {};
+
+// Redux-Saga
+function sagaFunc() {}
 ```
 
-## Running the app
+<br/>
 
-```bash
-# development
-$ npm run start
+### **타입**
 
-# watch mode
-$ npm run start:dev
+타입명의 경우 Pascal Case를 활용하여 작성한다.<br/>
+타입명의 어두는 반드시 대문자로 작성한다.<br/>
+타입명의 어미에는 반드시 "Type" 을 붙여준다.<br/>
 
-# production mode
-$ npm run start:prod
+```typescript
+interface BaseType {}
+type BaseType {}
 ```
 
-## Test
+<br/>
 
-```bash
-# unit tests
-$ npm run test
+### **변수**
 
-# e2e tests
-$ npm run test:e2e
+변수명의 경우 Camel Case를 활용하여 작성한다.<br/>
 
-# test coverage
-$ npm run test:cov
+```typescript
+const baseVar;
+let baseVar;
 ```
 
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+<br/>
