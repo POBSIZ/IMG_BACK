@@ -21,7 +21,7 @@ AdminJS.registerAdapter({ Database, Resource });
       // inject: [getRepositoryToken(UserEntity)],
       useFactory: () => ({
         adminJsOptions: {
-          rootPath: '/admin',
+          rootPath: '/adminpage',
           resources: EntityArr,
         },
         auth: {
