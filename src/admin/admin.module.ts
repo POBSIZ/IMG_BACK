@@ -22,7 +22,12 @@ AdminJS.registerAdapter({ Database, Resource });
       useFactory: () => ({
         adminJsOptions: {
           rootPath: '/adminpage',
+          loginPath: '/adminpage/login',
+          logoutPath: '/adminpage/logout',
           resources: EntityArr,
+          branding: {
+            companyName: 'IMG English',
+          },
         },
         auth: {
           authenticate: async (email, password) => {
