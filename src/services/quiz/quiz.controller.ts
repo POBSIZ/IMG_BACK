@@ -27,9 +27,9 @@ export class QuizsController {
   @UseGuards(JwtAuthGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async createBook(@UploadedFile() file, @Req() req) {
+  async createBook(@UploadedFile() file, @Body() body, @Req() req) {
     // console.log(req);
-    return await this.quizsService.createBook(file);
+    return await this.quizsService.createBook(file, body);
   }
 
   @UseGuards(JwtAuthGuard)

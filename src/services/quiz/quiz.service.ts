@@ -55,16 +55,12 @@ export class QuizsService {
   ) {}
 
   // 책 생성
-  async createBook(file: Express.Multer.File) {
+  async createBook(file: Express.Multer.File, body) {
     const createBookDto = new CreateBookDto();
 
-    console.log(file.originalname);
-    console.log(decodeURI(file.originalname));
-    console.log(decodeURIComponent(file.originalname));
-    console.log(encodeURI(file.originalname));
-    console.log(encodeURIComponent(file.originalname));
+    console.log(decodeURIComponent(body.name));
 
-    createBookDto.title = file.originalname;
+    createBookDto.title = decodeURIComponent(body.name);
     const lastBook = await this.bookRepository.save(createBookDto);
 
     const workbook = XLSX.read(file.buffer, { type: 'buffer' });
