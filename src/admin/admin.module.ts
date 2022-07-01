@@ -33,8 +33,10 @@ AdminJS.registerAdapter({ Database, Resource });
           authenticate: async (email, password) => {
             return Promise.resolve({ email: process.env.ADMIN_ID });
           },
-          cookieName: process.env.ADMIN_ID,
-          cookiePassword: process.env.ADMIN_PWD,
+          // cookieName: 'test',
+          // cookiePassword: '1234',
+          cookieName: 'imgls2022',
+          cookiePassword: 'imgls0629',
         },
       }),
     }),
