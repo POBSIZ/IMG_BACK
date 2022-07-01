@@ -60,7 +60,8 @@ export class UserEntity extends BaseEntity {
   @BeforeInsert()
   async hashPassword(): Promise<void> {
     try {
-      const salt = Number(process.env.BCRYPT_SALT);
+      const salt = 10;
+      // const salt = Number(process.env.BCRYPT_SALT);
       // const salt = await bcrypt.genSalt();
       this.password = await bcrypt.hash(this.password, salt);
     } catch (e) {

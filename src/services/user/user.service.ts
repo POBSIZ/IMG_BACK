@@ -81,7 +81,8 @@ export class UsersService {
         createUserDto.grade = reqData.grade;
         createUserDto.phone = reqData.phone;
 
-        const salt = Number(process.env.BCRYPT_SALT);
+        const salt = 10;
+        // const salt = Number(process.env.BCRYPT_SALT);
         const password = await bcrypt.hash(reqData.password, salt);
         createUserDto.password = password;
 
