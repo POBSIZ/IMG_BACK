@@ -31,4 +31,7 @@ export class UpdateUserQuizDto extends PartialType(CreateUserQuizDto) {
 
   // 최고성적
   best_solve: number;
+
+  // 최고성적
+  disabled: boolean;
 }

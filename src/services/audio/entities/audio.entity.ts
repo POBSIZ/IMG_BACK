@@ -1,3 +1,4 @@
+import { WordEntity } from 'src/services/quiz/entities/word.entity';
 import {
   Column,
   Entity,
@@ -5,6 +6,8 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   BaseEntity,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
 
 @Entity('Audio')
@@ -12,6 +15,14 @@ export class AudioEntity extends BaseEntity {
   // 오디오 ID
   @PrimaryGeneratedColumn()
   audio_id: bigint | number;
+
+  // 단어 ID
+  @OneToOne((type) => WordEntity, (word) => word.word_id, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'word_id' })
+  @Column({ nullable: true })
+  word_id: WordEntity;
 
   // 파일명
   @Column({ type: 'varchar' })

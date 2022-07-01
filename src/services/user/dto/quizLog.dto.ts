@@ -1,4 +1,5 @@
 import { IsNotEmpty } from 'class-validator';
+import { UserEntity } from '../entities/user.entity';
 
 import { UserQuizEntity } from '../entities/userQuiz.entity';
 import { WrongListEntity } from '../entities/wrongList.entity';

@@ -10,6 +10,7 @@ import {
   Req,
   Query,
   Param,
+  Delete,
 } from '@nestjs/common';
 import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 
@@ -24,6 +25,7 @@ import { IncomingMessage } from 'http';
 export class QuizsController {
   constructor(private readonly quizsService: QuizsService) {}
 
+  // 책 업로드
   @UseGuards(JwtAuthGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
@@ -32,24 +34,35 @@ export class QuizsController {
     return await this.quizsService.createBook(file, body);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('create')
-  async createQuiz(@Body() data: QuizCreateDataType) {
-    return await this.quizsService.createQuiz(data);
-  }
-
+  // 모든 책 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('book')
   async getBookAll() {
     return await this.quizsService.getBookAll();
   }
 
+  // 책 삭제하기
+  @UseGuards(JwtAuthGuard)
+  @Delete('book/delete/:id')
+  async deleteBook(@Param('id') id) {
+    return await this.quizsService.deleteBook(id);
+  }
+
+  // 퀴즈 생성
+  @UseGuards(JwtAuthGuard)
+  @Post('create')
+  async createQuiz(@Body() data: QuizCreateDataType) {
+    return await this.quizsService.createQuiz(data);
+  }
+
+  // 퀴즈 로그 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('my')
   async getMyQuizAll(@Req() req: IncomingMessage) {
     return await this.quizsService.getMyQuizAll(req);
   }
 
+  // 문제 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('prob/:id')
   async getQuizProbAll(@Param('id') id, @Req() req: IncomingMessage) {

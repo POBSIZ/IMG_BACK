@@ -21,7 +21,9 @@ export class WrongListEntity extends BaseEntity {
   wrongList_id: bigint;
 
   // 유저퀴즈 ID
-  @ManyToOne((type) => UserQuizEntity, (userQuiz) => userQuiz.userQuiz_id)
+  @ManyToOne((type) => UserQuizEntity, (userQuiz) => userQuiz.userQuiz_id, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'userQuiz_id' })
   userQuiz_id: UserQuizEntity;
 

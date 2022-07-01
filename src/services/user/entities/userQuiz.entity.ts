@@ -20,12 +20,16 @@ export class UserQuizEntity extends BaseEntity {
   userQuiz_id: bigint | number;
 
   // 회원 ID
-  @ManyToOne((type) => UserEntity, (user) => user.user_id)
+  @ManyToOne((type) => UserEntity, (user) => user.user_id, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'user_id' })
   user_id: UserEntity;
 
   // 퀴즈 ID
-  @ManyToOne((type) => QuizEntity, (quiz) => quiz.quiz_id)
+  @ManyToOne((type) => QuizEntity, (quiz) => quiz.quiz_id, {
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'quiz_id' })
   quiz_id: QuizEntity;
 
@@ -36,6 +40,10 @@ export class UserQuizEntity extends BaseEntity {
   // 최고성적
   @Column({ type: 'integer', default: 0 })
   best_solve: number;
+
+  // 최고성적
+  @Column({ type: 'boolean', default: false })
+  disabled: boolean;
 
   // 생성일
   @UpdateDateColumn({

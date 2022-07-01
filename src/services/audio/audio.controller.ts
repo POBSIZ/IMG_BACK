@@ -9,7 +9,6 @@ import {
 } from '@nestjs/common';
 import { AudiosService } from './audio.service';
 import { CreateAudioDto } from './dto/create-audio.dto';
-import { UpdateAudioDto } from './dto/update-audio.dto';
 
 @Controller('audio')
 export class AudiosController {

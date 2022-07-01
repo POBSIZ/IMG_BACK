@@ -17,7 +17,9 @@ export class WordEntity extends BaseEntity {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   word_id: bigint | number;
 
-  @ManyToOne((type) => BookEntity, (book) => book.book_id)
+  @ManyToOne((type) => BookEntity, (book) => book.book_id, {
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'book_id' })
   book_id: BookEntity;
 
@@ -32,9 +34,4 @@ export class WordEntity extends BaseEntity {
 
   @Column({ type: 'varchar' })
   type: string;
-
-  @OneToOne((type) => AudioEntity, (audio) => audio.audio_id)
-  @JoinColumn({ name: 'audio_id' })
-  @Column({ nullable: true })
-  audio_id: AudioEntity;
 }

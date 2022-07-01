@@ -15,7 +15,7 @@ import { Payload } from './jwt/jwt.payload';
 import { IncomingMessage } from 'http';
 import jwt from 'jwt-decode';
 
-import { UserEntity } from './entities/user.entity';
+import { Roles, UserEntity } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 
@@ -77,9 +77,14 @@ export class UsersService {
       if (isExist === null) {
         createUserDto.name = reqData.name;
         createUserDto.username = reqData.username;
+        createUserDto.phone = reqData.phone;
+        createUserDto.role = Roles[reqData.role.toUpperCase()];
         createUserDto.school = reqData.school;
         createUserDto.grade = reqData.grade;
-        createUserDto.phone = reqData.phone;
+        createUserDto.address = reqData.address;
+        createUserDto.zip = reqData.zip;
+        createUserDto.address_detail = reqData.address_detail;
+        createUserDto.academy = reqData.academy;
 
         const salt = 10;
         // const salt = Number(process.env.BCRYPT_SALT);
@@ -96,6 +101,8 @@ export class UsersService {
         error.response.message,
         error.response.statusCode,
       );
+      // console.log(error);
+      // throw new HttpException(error, 500);
     }
   }
 
@@ -265,10 +272,13 @@ export class UsersService {
       userQuizs.map(async (_userQuiz) => {
         const quizLogs = await this.quizLogRepository
           .createQueryBuilder('quizLog')
+          .leftJoinAndSelect('quizLog.userQuiz_id', 'userQuiz_id')
           .where('quizLog.userQuiz_id = :userQuiz_id', {
             userQuiz_id: _userQuiz.userQuiz_id,
           })
           .getMany();
+
+        // console.log(quizLogs);
 
         return await Promise.all(
           quizLogs.map(async (_quizLog) => {
@@ -284,8 +294,6 @@ export class UsersService {
         );
       }),
     );
-
-    // console.log(data);
 
     return data;
   }

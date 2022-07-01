@@ -1,7 +1,7 @@
 /* eslint-disable prefer-const */
 import * as XLSX from 'xlsx';
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Equal, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import jwt from 'jwt-decode';
@@ -58,7 +58,7 @@ export class QuizsService {
   async createBook(file: Express.Multer.File, body) {
     const createBookDto = new CreateBookDto();
 
-    console.log(decodeURIComponent(body.name));
+    // console.log(decodeURIComponent(body.name));
 
     createBookDto.title = decodeURIComponent(body.name);
     const lastBook = await this.bookRepository.save(createBookDto);
@@ -75,19 +75,50 @@ export class QuizsService {
       const createAudioDto = new CreateAudioDto();
       const values = Object.keys(row).map((key) => row[key]);
 
-      createAudioDto.file_name = `${values[0]}`;
-      createAudioDto.url = `http://${'localhost:3939'}/audios/${values[0]}.mp3`;
-      const lastAudio = await this.audioRepository.save(createAudioDto);
-
       createWordDto.book_id = lastBook;
       createWordDto.word = values[0];
       createWordDto.diacritic = values[1];
       createWordDto.meaning = values[2];
       createWordDto.type = values[3];
-      createWordDto.audio_id = lastAudio;
-      await this.wordRepository.save(createWordDto);
+      const lastWord = await this.wordRepository.save(createWordDto);
+
+      createAudioDto.file_name = `${values[0]}`;
+      createAudioDto.url = `/audios/${values[0]}.mp3`;
+      createAudioDto.word_id = lastWord;
+      const lastAudio = await this.audioRepository.save(createAudioDto);
     }
-    return rows;
+    // return rows;
+  }
+
+  // 책 모두 불러오기
+  async getBookAll() {
+    const books = await this.bookRepository.find();
+    const bookList = await Promise.all(
+      books.map(async (item) => {
+        const words = await this.wordRepository
+          .createQueryBuilder()
+          .where('book_id = :idx', { idx: item.book_id })
+          .getMany();
+        return {
+          idx: item.book_id,
+          title: item.title,
+          subtitle: words.length,
+        };
+      }),
+    );
+    return bookList;
+  }
+
+  // 책 삭제하기
+  async deleteBook(id) {
+    const book = await this.bookRepository
+      .createQueryBuilder('book')
+      .where('book.book_id = :book_id', { book_id: Number(id) })
+      .getOne();
+
+    await book.remove();
+    console.log(`Removed ${book.title}`);
+    return `Removed ${book.title}`;
   }
 
   // 퀴즈 생성
@@ -222,25 +253,6 @@ export class QuizsService {
     });
   }
 
-  // 책 모두 불러오기
-  async getBookAll() {
-    const books = await this.bookRepository.find();
-    const bookList = await Promise.all(
-      books.map(async (item) => {
-        const words = await this.wordRepository
-          .createQueryBuilder()
-          .where('book_id = :idx', { idx: item.book_id })
-          .getMany();
-        return {
-          idx: item.book_id,
-          title: item.title,
-          subtitle: words.length,
-        };
-      }),
-    );
-    return bookList;
-  }
-
   // 내 퀴즈 모두 불러오기
   async getMyQuizAll(req: IncomingMessage) {
     const userInfo: any = await jwt(req.headers.authorization);
@@ -251,22 +263,41 @@ export class QuizsService {
       .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
       .getMany();
 
-    let myQuizList: QuizItemType[] = [];
+    const myQuizList: QuizItemType[] = await Promise.all(
+      myQuizs.map(async (item) => {
+        try {
+          const prob = await this.probRepository
+            .createQueryBuilder('prob')
+            .where('prob.quiz_id = :quiz_id', {
+              quiz_id: Number(item.quiz_id.quiz_id),
+            })
+            .getOne();
 
-    myQuizs.forEach(async (item) => {
-      myQuizList.push({
-        userQuiz_id: Number(item.userQuiz_id),
-        quiz_id: Number(item.quiz_id.quiz_id),
-        title: item.quiz_id.title,
-        date: item.recent_date.toUTCString(),
-        tryCount: item.try_count,
-        solvedCount: item.best_solve,
-        maxCount: item.quiz_id.max_words,
-        disabled: false,
-      });
-    });
+          if (!prob) {
+            item.disabled = true;
+            const updateUserQuiz = await this.userQuizRepository.update(
+              Number(item.userQuiz_id),
+              item,
+            );
+            console.log(updateUserQuiz);
+          }
+        } catch (error) {
+          console.log(error);
+        }
 
-    // console.log(myQuizList);
+        return {
+          userQuiz_id: Number(item.userQuiz_id),
+          quiz_id: Number(item.quiz_id.quiz_id),
+          title: item.quiz_id.title,
+          date: item.recent_date.toUTCString(),
+          tryCount: item.try_count,
+          solvedCount: item.best_solve,
+          maxCount: item.quiz_id.max_words,
+          disabled: item.disabled,
+        };
+      }),
+    );
+
     return myQuizList;
   }
 
@@ -276,7 +307,6 @@ export class QuizsService {
       .createQueryBuilder('prob')
       .where('prob.quiz_id = :quiz_id', { quiz_id: id })
       .leftJoinAndSelect('prob.word_id', 'word_id')
-      .leftJoinAndSelect('word_id.audio_id', 'audio_id')
       .getMany();
 
     const probList = await Promise.all(
@@ -287,12 +317,17 @@ export class QuizsService {
           .where('option.prob_id = :prob_id', { prob_id: item.prob_id })
           .getMany();
 
+        const audio = await this.audioRepository
+          .createQueryBuilder('audio')
+          .where('audio.word_id = :word_id', { word_id: item.word_id.word_id })
+          .getOne();
+
         const optionList = [
           options[0].word_id.meaning,
           options[1].word_id.meaning,
           options[2].word_id.meaning,
           options[3].word_id.meaning,
-        ];
+        ].sort(() => Math.random() - 0.5);
 
         return {
           prob_id: item.prob_id,
@@ -300,7 +335,7 @@ export class QuizsService {
           diacritic: item.word_id.diacritic,
           options: optionList,
           answer: optionList.indexOf(item.word_id.meaning),
-          audio: item.word_id.audio_id.url,
+          audio: audio.url,
         };
       }),
     );

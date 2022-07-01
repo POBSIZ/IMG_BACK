@@ -23,12 +23,16 @@ export class WrongEntity extends BaseEntity {
   wrong_id: bigint;
 
   // 오답목록 ID
-  @ManyToOne((type) => WrongListEntity, (wrongList) => wrongList.wrongList_id)
+  @ManyToOne((type) => WrongListEntity, (wrongList) => wrongList.wrongList_id, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'wrongList_id' })
   wrongList_id: WrongListEntity;
 
   // 문제 ID
-  @ManyToOne((type) => ProbEntity, (prob) => prob.prob_id)
+  @ManyToOne((type) => ProbEntity, (prob) => prob.prob_id, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'prob_id' })
   prob_id: ProbEntity;
 
