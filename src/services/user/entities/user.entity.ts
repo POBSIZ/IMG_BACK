@@ -10,9 +10,14 @@ import {
 
 import * as bcrypt from 'bcrypt';
 import { InternalServerErrorException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 @Entity('User')
 export class UserEntity extends BaseEntity {
+  constructor(private readonly configService: ConfigService) {
+    super();
+  }
+
   // 유저 ID
   @PrimaryGeneratedColumn({ type: 'bigint' })
   user_id: bigint | number;
@@ -55,7 +60,7 @@ export class UserEntity extends BaseEntity {
   @BeforeInsert()
   async hashPassword(): Promise<void> {
     try {
-      const salt = 10;
+      const salt = Number(process.env.BCRYPT_SALT);
       // const salt = await bcrypt.genSalt();
       this.password = await bcrypt.hash(this.password, salt);
     } catch (e) {

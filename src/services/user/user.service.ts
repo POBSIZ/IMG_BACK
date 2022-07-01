@@ -35,6 +35,7 @@ import { CreateWrongListDto } from './dto/wrongList.dto';
 import { ProbEntity } from '../quiz/entities/prob.entity';
 
 import { QuizLogItemType, UserQuizUpadteData } from './user.types';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UsersService {
@@ -60,6 +61,8 @@ export class UsersService {
     @InjectRepository(WrongEntity)
     private readonly wrongRepository: Repository<WrongEntity>,
 
+    private readonly configService: ConfigService,
+
     private jwtService: JwtService,
   ) {}
 
@@ -78,7 +81,8 @@ export class UsersService {
         createUserDto.grade = reqData.grade;
         createUserDto.phone = reqData.phone;
 
-        const password = await bcrypt.hash(reqData.password, 10);
+        const salt = Number(process.env.BCRYPT_SALT);
+        const password = await bcrypt.hash(reqData.password, salt);
         createUserDto.password = password;
 
         await this.userRepository.save(createUserDto);

@@ -19,15 +19,16 @@ import { QuizModule } from './services/quiz/quiz.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
       port: 5432,
-      username: 'postgres',
-      password: '010911',
-      database: 'img_db',
-      // database: 'img',
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PWD,
+      database: process.env.DB_NAME,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),

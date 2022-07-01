@@ -31,10 +31,10 @@ AdminJS.registerAdapter({ Database, Resource });
         },
         auth: {
           authenticate: async (email, password) => {
-            return Promise.resolve({ email: 'test' });
+            return Promise.resolve({ email: process.env.ADMIN_ID });
           },
-          cookieName: 'test',
-          cookiePassword: '1234',
+          cookieName: process.env.ADMIN_ID,
+          cookiePassword: process.env.ADMIN_PWD,
         },
       }),
     }),
