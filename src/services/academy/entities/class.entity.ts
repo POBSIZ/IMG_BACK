@@ -1,4 +1,3 @@
-import { AcademyEntity } from 'src/services/academy/entities/academy.entity';
 import {
   Column,
   Entity,
@@ -6,31 +5,28 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   BaseEntity,
-  ManyToOne,
+  OneToOne,
   JoinColumn,
+  ManyToOne,
 } from 'typeorm';
+import { AcademyEntity } from './academy.entity';
 
-@Entity('Book')
-export class BookEntity extends BaseEntity {
-  // 책 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  book_id: number | bigint;
+@Entity('Class')
+export class ClassEntity extends BaseEntity {
+  // 반 ID
+  @PrimaryGeneratedColumn()
+  class_id: bigint | number;
 
   // 학원 ID
   @ManyToOne((type) => AcademyEntity, (academy) => academy.academy_id, {
-    onDelete: 'SET NULL',
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'academy_id' })
-  @Column({ nullable: true })
+  @Column({ nullable: false })
   academy_id: AcademyEntity;
 
-  // 책 제목
   @Column({ type: 'varchar' })
-  title: string;
-
-  // 책 설명
-  @Column({ type: 'text', nullable: true })
-  desc: string;
+  name: string;
 
   // 생성일
   @Column({

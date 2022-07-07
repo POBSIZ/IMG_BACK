@@ -16,6 +16,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './services/user/user.module';
 import { AudioModule } from './services/audio/audio.module';
 import { QuizModule } from './services/quiz/quiz.module';
+import { AcademyModule } from './services/academy/academy.module';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { QuizModule } from './services/quiz/quiz.module';
       port: 5432,
       // username: `postgres`,
       // password: `010911`,
-      // database: `img_db`,
+      // database: `img`,
       username: `imgls`,
       password: `imgls0629`,
       database: `imgls`,
@@ -49,6 +50,7 @@ import { QuizModule } from './services/quiz/quiz.module';
     AudioModule,
     QuizModule,
     AdminModule,
+    AcademyModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],

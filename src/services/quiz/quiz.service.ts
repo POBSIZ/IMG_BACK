@@ -1,6 +1,6 @@
 /* eslint-disable prefer-const */
 import * as XLSX from 'xlsx';
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { Equal, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -95,14 +95,14 @@ export class QuizsService {
     const books = await this.bookRepository.find();
     const bookList = await Promise.all(
       books.map(async (item) => {
-        const words = await this.wordRepository
+        const wordsLength = await this.wordRepository
           .createQueryBuilder()
           .where('book_id = :idx', { idx: item.book_id })
-          .getMany();
+          .getCount();
         return {
           idx: item.book_id,
           title: item.title,
-          subtitle: words.length,
+          subtitle: wordsLength,
         };
       }),
     );
@@ -119,6 +119,13 @@ export class QuizsService {
     await book.remove();
     console.log(`Removed ${book.title}`);
     return `Removed ${book.title}`;
+  }
+
+  // 책 검색하기
+  async searchBook(str: string) {
+    const books = await this.bookRepository.find();
+    const srBooks = books.filter((item) => item.title.includes(str));
+    return srBooks;
   }
 
   // 퀴즈 생성
@@ -255,17 +262,17 @@ export class QuizsService {
 
   // 내 퀴즈 모두 불러오기
   async getMyQuizAll(req: IncomingMessage) {
-    const userInfo: any = await jwt(req.headers.authorization);
+    try {
+      const userInfo: any = await jwt(req.headers.authorization);
 
-    const myQuizs = await this.userQuizRepository
-      .createQueryBuilder('userQuiz')
-      .where('userQuiz.user_id = :user_id', { user_id: userInfo.id })
-      .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
-      .getMany();
+      const myQuizs = await this.userQuizRepository
+        .createQueryBuilder('userQuiz')
+        .where('userQuiz.user_id = :user_id', { user_id: userInfo.user_id })
+        .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
+        .getMany();
 
-    const myQuizList: QuizItemType[] = await Promise.all(
-      myQuizs.map(async (item) => {
-        try {
+      const myQuizList: QuizItemType[] = await Promise.all(
+        myQuizs.map(async (item) => {
           const prob = await this.probRepository
             .createQueryBuilder('prob')
             .where('prob.quiz_id = :quiz_id', {
@@ -279,26 +286,27 @@ export class QuizsService {
               Number(item.userQuiz_id),
               item,
             );
-            console.log(updateUserQuiz);
+            // console.log(updateUserQuiz);
           }
-        } catch (error) {
-          console.log(error);
-        }
 
-        return {
-          userQuiz_id: Number(item.userQuiz_id),
-          quiz_id: Number(item.quiz_id.quiz_id),
-          title: item.quiz_id.title,
-          date: item.recent_date.toUTCString(),
-          tryCount: item.try_count,
-          solvedCount: item.best_solve,
-          maxCount: item.quiz_id.max_words,
-          disabled: item.disabled,
-        };
-      }),
-    );
+          return {
+            userQuiz_id: Number(item.userQuiz_id),
+            quiz_id: Number(item.quiz_id.quiz_id),
+            title: item.quiz_id.title,
+            date: item.recent_date.toUTCString(),
+            tryCount: item.try_count,
+            solvedCount: item.best_solve,
+            maxCount: item.quiz_id.max_words,
+            disabled: item.disabled,
+          };
+        }),
+      );
 
-    return myQuizList;
+      return myQuizList;
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
   }
 
   // 퀴즈 문제 모두 불러오기

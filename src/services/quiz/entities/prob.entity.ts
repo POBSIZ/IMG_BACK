@@ -16,7 +16,7 @@ import { WordEntity } from './word.entity';
 export class ProbEntity extends BaseEntity {
   // 문제 ID
   @PrimaryGeneratedColumn({ type: 'bigint' })
-  prob_id: bigint;
+  prob_id: bigint | number;
 
   // 퀴즈 ID
   @ManyToOne((type) => QuizEntity, (quiz) => quiz.quiz_id, {

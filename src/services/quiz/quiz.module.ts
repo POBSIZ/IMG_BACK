@@ -12,6 +12,9 @@ import { OptionEntity } from './entities/option.entity';
 import { WordEntity } from './entities/word.entity';
 import { UserQuizEntity } from '../user/entities/userQuiz.entity';
 
+import { AcademyEntity } from '../academy/entities/academy.entity';
+import { ClassEntity } from '../academy/entities/class.entity';
+
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from '../user/jwt/jwt.strategy';
@@ -33,6 +36,8 @@ import { JwtStrategy } from '../user/jwt/jwt.strategy';
       WordEntity,
       UserQuizEntity,
       AudioModule,
+      AcademyEntity,
+      ClassEntity,
     ]),
     AudioModule,
   ],

@@ -36,6 +36,8 @@ import { ProbEntity } from '../quiz/entities/prob.entity';
 
 import { QuizLogItemType, UserQuizUpadteData } from './user.types';
 import { ConfigService } from '@nestjs/config';
+import { AcademyEntity } from '../academy/entities/academy.entity';
+import { ClassEntity } from '../academy/entities/class.entity';
 
 @Injectable()
 export class UsersService {
@@ -61,6 +63,12 @@ export class UsersService {
     @InjectRepository(WrongEntity)
     private readonly wrongRepository: Repository<WrongEntity>,
 
+    @InjectRepository(AcademyEntity)
+    private readonly academyRepository: Repository<AcademyEntity>,
+
+    @InjectRepository(ClassEntity)
+    private readonly classRepository: Repository<ClassEntity>,
+
     private readonly configService: ConfigService,
 
     private jwtService: JwtService,
@@ -79,12 +87,19 @@ export class UsersService {
         createUserDto.username = reqData.username;
         createUserDto.phone = reqData.phone;
         createUserDto.role = Roles[reqData.role.toUpperCase()];
+
+        // 학생
         createUserDto.school = reqData.school;
         createUserDto.grade = reqData.grade;
+        createUserDto.class_id = reqData.class_id || null;
+
+        // 학원 관계자
         createUserDto.address = reqData.address;
         createUserDto.zip = reqData.zip;
         createUserDto.address_detail = reqData.address_detail;
-        createUserDto.academy = reqData.academy;
+
+        // Both
+        createUserDto.academy_id = reqData.academy_id || null;
 
         const salt = 10;
         // const salt = Number(process.env.BCRYPT_SALT);
@@ -121,12 +136,18 @@ export class UsersService {
 
         if (isPasswordMatching) {
           const payload: Payload = {
-            id: user.user_id,
+            user_id: user.user_id,
             name: user.name,
-            school: user.school,
-            grade: user.grade,
             phone: user.phone,
             role: user.role,
+            created_at: user.created_at,
+            school: user.school,
+            grade: user.grade,
+            class_id: user.class_id?.class_id || null,
+            address: user.address,
+            zip: user.zip,
+            address_detail: user.address_detail,
+            academy_id: user.academy_id?.academy_id || null,
             isValidate: true,
           };
           return this.jwtService.sign(payload);
@@ -147,21 +168,28 @@ export class UsersService {
     try {
       const userInfo: any = await jwt(req.headers.authorization);
       const user = await this.userRepository.findOneBy([
-        { user_id: userInfo.id },
+        { user_id: userInfo.user_id },
       ]);
 
       const payload: Payload = {
-        id: user.user_id,
+        user_id: user.user_id,
         name: user.name,
-        school: user.school,
-        grade: user.grade,
         phone: user.phone,
         role: user.role,
+        created_at: user.created_at,
+        school: user.school,
+        grade: user.grade,
+        class_id: user.class_id?.class_id || null,
+        address: user.address,
+        zip: user.zip,
+        address_detail: user.address_detail,
+        academy_id: user.academy_id?.academy_id || null,
         isValidate: true,
       };
 
       return this.jwtService.sign(payload);
     } catch (error) {
+      console.log(error);
       throw new HttpException(error, 500);
     }
   }
@@ -172,7 +200,7 @@ export class UsersService {
       const userInfo: any = await jwt(req.headers.authorization);
 
       const user = await this.userRepository.findOneBy([
-        { user_id: userInfo.id },
+        { user_id: userInfo.user_id },
       ]);
 
       const userQuiz = await this.userQuizRepository
@@ -265,7 +293,7 @@ export class UsersService {
       .createQueryBuilder('userQuiz')
       .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
       .leftJoinAndSelect('userQuiz.user_id', 'user_id')
-      .where('userQuiz.user_id = :user_id', { user_id: userInfo.id })
+      .where('userQuiz.user_id = :user_id', { user_id: userInfo.user_id })
       .getMany();
 
     const data = await Promise.all(

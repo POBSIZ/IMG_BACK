@@ -1,3 +1,4 @@
+import { AcademyEntity } from 'src/services/academy/entities/academy.entity';
 import {
   Column,
   Entity,
@@ -5,13 +6,23 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   BaseEntity,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
 @Entity('Quiz')
 export class QuizEntity extends BaseEntity {
   // 퀴즈 ID
   @PrimaryGeneratedColumn({ type: 'bigint' })
-  quiz_id: number;
+  quiz_id: number | bigint;
+
+  // 학원 ID
+  @ManyToOne((type) => AcademyEntity, (academy) => academy.academy_id, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'academy_id' })
+  @Column({ nullable: true })
+  academy_id: AcademyEntity;
 
   // 퀴즈 제목
   @Column({ type: 'varchar' })

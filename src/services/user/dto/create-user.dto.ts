@@ -1,4 +1,6 @@
 import { IsNotEmpty } from 'class-validator';
+import { AcademyEntity } from 'src/services/academy/entities/academy.entity';
+import { ClassEntity } from 'src/services/academy/entities/class.entity';
 import { Roles } from '../entities/user.entity';
 
 export class CreateUserDto {
@@ -22,11 +24,18 @@ export class CreateUserDto {
   @IsNotEmpty()
   role: Roles;
 
+  // 학생 >
+
   // 학교
   school: string;
 
   // 학년
   grade: string;
+
+  // 반 ID
+  class_id: ClassEntity;
+
+  // 학원 관계자 >
 
   // 주소
   address: string;
@@ -37,6 +46,8 @@ export class CreateUserDto {
   // 상세주소
   address_detail: string;
 
-  // 학원이름
-  academy: string;
+  // 학생, 학원 관계자 Both >
+
+  // 학원 ID
+  academy_id: AcademyEntity;
 }

@@ -48,6 +48,13 @@ export class QuizsController {
     return await this.quizsService.deleteBook(id);
   }
 
+  // 책 검색
+  @UseGuards(JwtAuthGuard)
+  @Get('book/search/:str')
+  async searchBook(@Param('str') str: string) {
+    return await this.quizsService.searchBook(str);
+  }
+
   // 퀴즈 생성
   @UseGuards(JwtAuthGuard)
   @Post('create')

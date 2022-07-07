@@ -6,11 +6,15 @@ import {
   CreateDateColumn,
   BaseEntity,
   BeforeInsert,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 
 import * as bcrypt from 'bcrypt';
 import { InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ClassEntity } from 'src/services/academy/entities/class.entity';
+import { AcademyEntity } from 'src/services/academy/entities/academy.entity';
 
 export enum Roles {
   ADMIN = 'admin',
@@ -67,6 +71,13 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   grade: string; // 학년
 
+  @ManyToOne((type) => ClassEntity, (_class) => _class.class_id, {
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'class_id' })
+  @Column({ nullable: true })
+  class_id: ClassEntity; // 반 ID
+
   /**
    * 학원 관계자 Insider
    * @param {address} Data
@@ -81,12 +92,19 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   address_detail: string; // 상세 주소
 
+  @Column({ type: 'boolean', nullable: true, default: false })
+  academy_admin: boolean; // 학원 권한
+
   /**
    * 학생, 학원 관계자 Both
    */
 
-  @Column({ type: 'varchar', nullable: true })
-  academy: string; // 학원
+  @ManyToOne((type) => AcademyEntity, (academy) => academy.academy_id, {
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'academy_id' })
+  @Column({ nullable: true })
+  academy_id: AcademyEntity; // 학원 ID
 
   @BeforeInsert()
   async hashPassword(): Promise<void> {

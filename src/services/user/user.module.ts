@@ -13,6 +13,8 @@ import { WrongListEntity } from './entities/wrongList.entity';
 import { WrongEntity } from './entities/wrong.entity';
 import { QuizLogEntity } from './entities/quizLog.entity';
 import { ProbEntity } from '../quiz/entities/prob.entity';
+import { AcademyEntity } from '../academy/entities/academy.entity';
+import { ClassEntity } from '../academy/entities/class.entity';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { ProbEntity } from '../quiz/entities/prob.entity';
       WrongEntity,
       QuizLogEntity,
       ProbEntity,
+      AcademyEntity,
+      ClassEntity,
     ]),
     // session을 사용하지 않을 예정이기 때문에 false
     PassportModule.register({ defaultStrategy: 'jwt', session: false }),
