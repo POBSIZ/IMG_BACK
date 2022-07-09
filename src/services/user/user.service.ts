@@ -137,8 +137,8 @@ export class UsersService {
         if (isPasswordMatching) {
           const payload: Payload = {
             ...user,
-            username: '',
-            password: '',
+            academy_id: user.academy_id,
+            class_id: user.class_id,
             isValidate: true,
           };
           return this.jwtService.sign(payload);
@@ -164,11 +164,11 @@ export class UsersService {
 
       const payload: Payload = {
         ...user,
-        username: '',
-        password: '',
+        academy_id: user.academy_id,
+        class_id: user.class_id,
         isValidate: true,
       };
-
+      // console.log(payload);
       return this.jwtService.sign(payload);
     } catch (error) {
       console.log(error);
@@ -182,7 +182,7 @@ export class UsersService {
     req: IncomingMessage,
   ) {
     try {
-      data.users?.forEach(async (item) => {
+      data.users.forEach(async (item) => {
         const createUserQuizDto = new CreateUserQuizDto();
 
         const user = await this.userRepository.findOneBy([
@@ -213,60 +213,72 @@ export class UsersService {
       const userInfo: any = await jwt(req.headers.authorization);
 
       const user = await this.userRepository.findOneBy([
-        { user_id: userInfo.user_id },
+        { user_id: Number(userInfo.user_id) },
       ]);
+
+      const _userQuiz = await this.userQuizRepository
+        .createQueryBuilder('userQuiz')
+        .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
+        .where('userQuiz.user_id = :user_id', { user_id: Number(user.user_id) })
+        .andWhere('userQuiz.quiz_id = :quiz_id', {
+          quiz_id: Number(data.quiz_id),
+        })
+        .getOne();
+
+      const upadateUserQuizDto = new UpdateUserQuizDto();
+      upadateUserQuizDto.try_count = _userQuiz.try_count + 1;
+      if (_userQuiz.best_solve > data.best_solve) {
+        upadateUserQuizDto.best_solve = _userQuiz.best_solve;
+      } else {
+        upadateUserQuizDto.best_solve = Number(data.best_solve);
+      }
+
+      await this.userQuizRepository.update(
+        Number(_userQuiz.userQuiz_id),
+        upadateUserQuizDto,
+      );
 
       const userQuiz = await this.userQuizRepository
         .createQueryBuilder('userQuiz')
         .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
-        .where('userQuiz.user_id = :user_id', { user_id: user.user_id })
-        .where('userQuiz.quiz_id = :quiz_id', { quiz_id: data.quiz_id })
+        .where('userQuiz.userQuiz_id = :userQuiz_id', {
+          userQuiz_id: Number(_userQuiz.userQuiz_id),
+        })
         .getOne();
-
-      const upadateUserQuizDto = new UpdateUserQuizDto();
-      upadateUserQuizDto.try_count = userQuiz.try_count + 1;
-      if (userQuiz.best_solve > data.best_solve) {
-        upadateUserQuizDto.best_solve = userQuiz.best_solve;
-      } else {
-        upadateUserQuizDto.best_solve = data.best_solve;
-      }
-
-      await this.userQuizRepository.update(
-        Number(userQuiz.userQuiz_id),
-        upadateUserQuizDto,
-      );
 
       const createWrongListDto = new CreateWrongListDto();
       createWrongListDto.userQuiz_id = userQuiz;
       const wrongList = await this.wrongListRepository.save(createWrongListDto);
 
       const wrongAnswerList = data.answerList.filter(
-        (item) => item.answer[0] !== item.correctWordId,
+        (item) => Number(item.answer[0]) !== Number(item.correctWordId),
       );
 
-      wrongAnswerList.forEach(async (item) => {
-        const prob = await this.probRepository
-          .createQueryBuilder('prob')
-          .where('prob.prob_id = :prob_id', { prob_id: item.prob_id })
-          .getOne();
+      await Promise.all(
+        wrongAnswerList.map(async (item) => {
+          const prob = await this.probRepository
+            .createQueryBuilder('prob')
+            .where('prob.prob_id = :prob_id', { prob_id: Number(item.prob_id) })
+            .getOne();
 
-        const createWrongDto = new CreateWrongDto();
-        createWrongDto.wrongList_id = wrongList;
-        createWrongDto.prob_id = prob;
-        createWrongDto.wrong_word = item.answer[1];
-        await this.wrongRepository.save(createWrongDto);
-      });
+          const createWrongDto = new CreateWrongDto();
+          createWrongDto.wrongList_id = wrongList;
+          createWrongDto.prob_id = prob;
+          createWrongDto.wrong_word = item.answer[1];
+          return await this.wrongRepository.save(createWrongDto);
+        }),
+      );
 
       const createQuizLogDto = new CreateQuizLogDto();
       createQuizLogDto.userQuiz_id = userQuiz;
       createQuizLogDto.wrongList_id = wrongList;
       createQuizLogDto.quiz_title = userQuiz.quiz_id.title;
-      createQuizLogDto.score = data.best_solve;
-      createQuizLogDto.max_words = userQuiz.quiz_id.max_words;
+      createQuizLogDto.score = Number(data.best_solve);
+      createQuizLogDto.max_words = Number(userQuiz.quiz_id.max_words);
       const quizLog = await this.quizLogRepository.save(createQuizLogDto);
       // console.log(quizLog);
 
-      return;
+      return 'Success';
     } catch (error) {
       console.log(error);
       throw new HttpException(error, 500);
@@ -329,9 +341,10 @@ export class UsersService {
 
     const userQuizs = await this.userQuizRepository
       .createQueryBuilder('userQuiz')
-      .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
       .leftJoinAndSelect('userQuiz.user_id', 'user_id')
-      .where('userQuiz.user_id = :user_id', { user_id: userInfo.user_id })
+      .where('userQuiz.user_id = :user_id', {
+        user_id: Number(userInfo.user_id),
+      })
       .getMany();
 
     const data = await Promise.all(
@@ -340,11 +353,9 @@ export class UsersService {
           .createQueryBuilder('quizLog')
           .leftJoinAndSelect('quizLog.userQuiz_id', 'userQuiz_id')
           .where('quizLog.userQuiz_id = :userQuiz_id', {
-            userQuiz_id: _userQuiz.userQuiz_id,
+            userQuiz_id: Number(_userQuiz.userQuiz_id),
           })
           .getMany();
-
-        // console.log(quizLogs);
 
         return await Promise.all(
           quizLogs.map(async (_quizLog) => {

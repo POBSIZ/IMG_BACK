@@ -109,6 +109,7 @@ export class QuizsService {
   // 책 모두 불러오기
   async getBookAll(req: IncomingMessage) {
     const userInfo: any = await jwt(req.headers.authorization);
+
     const books = await this.bookRepository
       .createQueryBuilder('book')
       .where('book.academy_id = :academy_id', {
@@ -120,10 +121,11 @@ export class QuizsService {
       books.map(async (item) => {
         const wordsLength = await this.wordRepository
           .createQueryBuilder()
-          .where('book_id = :idx', { idx: item.book_id })
+          .where('book_id = :idx', { idx: Number(item.book_id) })
           .getCount();
+
         return {
-          idx: item.book_id,
+          idx: Number(item.book_id),
           title: item.title,
           subtitle: wordsLength,
         };
@@ -155,11 +157,6 @@ export class QuizsService {
   async getQuizAll(req: IncomingMessage) {
     try {
       const userInfo: any = await jwt(req.headers.authorization);
-      // const academy = await this.academyRepository.findOneBy([
-      //   {
-      //     academy_id: Number(userInfo.academy_id),
-      //   },
-      // ]);
 
       const quizs = await this.quizRepository
         .createQueryBuilder('quiz')
@@ -171,7 +168,7 @@ export class QuizsService {
       const quizList = await Promise.all(
         quizs.map((item) => {
           return {
-            idx: item.quiz_id,
+            idx: Number(item.quiz_id),
             title: item.title,
             subtitle: item.max_words,
           };
@@ -289,7 +286,7 @@ export class QuizsService {
       data.wordList.forEach(async (item) => {
         const words = await this.wordRepository
           .createQueryBuilder('book')
-          .where('book.book_id = :book_id', { book_id: item.idx })
+          .where('book.book_id = :book_id', { book_id: Number(item.idx) })
           .getMany();
 
         // console.log(item);

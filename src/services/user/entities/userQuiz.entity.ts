@@ -28,7 +28,7 @@ export class UserQuizEntity extends BaseEntity {
 
   // 퀴즈 ID
   @ManyToOne((type) => QuizEntity, (quiz) => quiz.quiz_id, {
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'quiz_id' })
   quiz_id: QuizEntity;

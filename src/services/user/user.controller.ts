@@ -83,7 +83,7 @@ export class UsersController {
     return await this.usersService.getUserInfo(param, req);
   }
 
-  // 단일 회원 정보 불러오기
+  // 퀴즈 로그 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('quiz/log')
   async getQuizLog(@Req() req: IncomingMessage) {

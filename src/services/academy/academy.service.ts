@@ -19,6 +19,8 @@ import { UserEntity } from '../user/entities/user.entity';
 import { QuizEntity } from '../quiz/entities/quiz.entity';
 import { BookEntity } from '../quiz/entities/book.entity';
 
+import { JwtService } from '@nestjs/jwt';
+
 @Injectable()
 export class AcademyService {
   constructor(
@@ -36,6 +38,8 @@ export class AcademyService {
 
     @InjectRepository(BookEntity)
     private readonly bookRepository: Repository<BookEntity>,
+
+    private jwtService: JwtService,
   ) {}
 
   // 학원 생성
@@ -44,7 +48,7 @@ export class AcademyService {
       const userInfo: Payload = await jwt(req.headers.authorization);
       const user = await this.userRepository.findOneBy([
         {
-          user_id: userInfo.user_id,
+          user_id: Number(userInfo.user_id),
         },
       ]);
 
@@ -70,7 +74,14 @@ export class AcademyService {
         user.academy_id = lastAcademy;
         await this.userRepository.update(Number(user.user_id), user);
 
-        return `Create ${reqData.name} Academy`;
+        const payload: Payload = {
+          ...user,
+          class_id: user?.class_id?.class_id,
+          academy_id: user?.academy_id?.academy_id,
+          isValidate: true,
+        };
+
+        return this.jwtService.sign(payload);
       } else {
         throw new UnauthorizedException('이미 존재하는 학원입니다.');
       }
