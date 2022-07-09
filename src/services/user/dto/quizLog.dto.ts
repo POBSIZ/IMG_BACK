@@ -13,7 +13,15 @@ export class CreateQuizLogDto {
   @IsNotEmpty()
   wrongList_id: WrongListEntity;
 
+  // 퀴즈 제목
+  @IsNotEmpty()
+  quiz_title: string;
+
   // 점수
   @IsNotEmpty()
   score: number;
+
+  // 문항수
+  @IsNotEmpty()
+  max_words: number;
 }

@@ -29,16 +29,20 @@ export class QuizsController {
   @UseGuards(JwtAuthGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async createBook(@UploadedFile() file, @Body() body, @Req() req) {
+  async createBook(
+    @UploadedFile() file,
+    @Body() body,
+    @Req() req: IncomingMessage,
+  ) {
     // console.log(req);
-    return await this.quizsService.createBook(file, body);
+    return await this.quizsService.createBook(file, body, req);
   }
 
   // 모든 책 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('book')
-  async getBookAll() {
-    return await this.quizsService.getBookAll();
+  async getBookAll(@Req() req: IncomingMessage) {
+    return await this.quizsService.getBookAll(req);
   }
 
   // 책 삭제하기
@@ -55,11 +59,28 @@ export class QuizsController {
     return await this.quizsService.searchBook(str);
   }
 
+  // 모든 퀴즈 불러오기
+  @UseGuards(JwtAuthGuard)
+  @Get('all')
+  async getQuizAll(@Req() req: IncomingMessage) {
+    return await this.quizsService.getQuizAll(req);
+  }
+
   // 퀴즈 생성
   @UseGuards(JwtAuthGuard)
   @Post('create')
-  async createQuiz(@Body() data: QuizCreateDataType) {
-    return await this.quizsService.createQuiz(data);
+  async createQuiz(
+    @Body() data: QuizCreateDataType,
+    @Req() req: IncomingMessage,
+  ) {
+    return await this.quizsService.createQuiz(data, req);
+  }
+
+  // 퀴즈 삭제하기
+  @UseGuards(JwtAuthGuard)
+  @Delete('delete/:id')
+  async deleteQuiz(@Param('id') id, @Req() req: IncomingMessage) {
+    return await this.quizsService.deleteQuiz(id, req);
   }
 
   // 퀴즈 로그 불러오기

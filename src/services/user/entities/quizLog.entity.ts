@@ -37,9 +37,17 @@ export class QuizLogEntity extends BaseEntity {
   @JoinColumn({ name: 'wrongList_id' })
   wrongList_id: WrongListEntity;
 
+  // 퀴즈 제목
+  @Column({ type: 'varchar' })
+  quiz_title: string;
+
   // 점수
   @Column({ type: 'integer' })
   score: number;
+
+  // 문제수
+  @Column({ type: 'integer' })
+  max_words: number;
 
   // 생성일
   @Column({

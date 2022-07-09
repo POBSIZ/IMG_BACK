@@ -20,7 +20,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 
 import { UserQuizEntity } from './entities/userQuiz.entity';
-import { UpdateUserQuizDto } from './dto/userQuiz.dto';
+import { CreateUserQuizDto, UpdateUserQuizDto } from './dto/userQuiz.dto';
 import { QuizEntity } from '../quiz/entities/quiz.entity';
 
 import { QuizLogEntity } from './entities/quizLog.entity';
@@ -91,7 +91,7 @@ export class UsersService {
         // 학생
         createUserDto.school = reqData.school;
         createUserDto.grade = reqData.grade;
-        createUserDto.class_id = reqData.class_id || null;
+        createUserDto.class_id = reqData.class_id;
 
         // 학원 관계자
         createUserDto.address = reqData.address;
@@ -99,7 +99,7 @@ export class UsersService {
         createUserDto.address_detail = reqData.address_detail;
 
         // Both
-        createUserDto.academy_id = reqData.academy_id || null;
+        createUserDto.academy_id = reqData.academy_id;
 
         const salt = 10;
         // const salt = Number(process.env.BCRYPT_SALT);
@@ -136,18 +136,9 @@ export class UsersService {
 
         if (isPasswordMatching) {
           const payload: Payload = {
-            user_id: user.user_id,
-            name: user.name,
-            phone: user.phone,
-            role: user.role,
-            created_at: user.created_at,
-            school: user.school,
-            grade: user.grade,
-            class_id: user.class_id?.class_id || null,
-            address: user.address,
-            zip: user.zip,
-            address_detail: user.address_detail,
-            academy_id: user.academy_id?.academy_id || null,
+            ...user,
+            username: '',
+            password: '',
             isValidate: true,
           };
           return this.jwtService.sign(payload);
@@ -172,18 +163,9 @@ export class UsersService {
       ]);
 
       const payload: Payload = {
-        user_id: user.user_id,
-        name: user.name,
-        phone: user.phone,
-        role: user.role,
-        created_at: user.created_at,
-        school: user.school,
-        grade: user.grade,
-        class_id: user.class_id?.class_id || null,
-        address: user.address,
-        zip: user.zip,
-        address_detail: user.address_detail,
-        academy_id: user.academy_id?.academy_id || null,
+        ...user,
+        username: '',
+        password: '',
         isValidate: true,
       };
 
@@ -194,7 +176,38 @@ export class UsersService {
     }
   }
 
-  // 회원퀴즈 정보 업데이트
+  // 유저퀴즈 생성
+  async createUserQuiz(
+    data: { users: number[]; quiz_id: number },
+    req: IncomingMessage,
+  ) {
+    try {
+      data.users?.forEach(async (item) => {
+        const createUserQuizDto = new CreateUserQuizDto();
+
+        const user = await this.userRepository.findOneBy([
+          {
+            user_id: item,
+          },
+        ]);
+
+        const quiz = await this.quizRepository.findOneBy([
+          {
+            quiz_id: data.quiz_id,
+          },
+        ]);
+
+        createUserQuizDto.user_id = user;
+        createUserQuizDto.quiz_id = quiz;
+
+        await this.userQuizRepository.save(createUserQuizDto);
+      });
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 유저퀴즈 정보 업데이트
   async updateUserQuiz(data: UserQuizUpadteData, req: IncomingMessage) {
     try {
       const userInfo: any = await jwt(req.headers.authorization);
@@ -245,9 +258,11 @@ export class UsersService {
       });
 
       const createQuizLogDto = new CreateQuizLogDto();
-      createQuizLogDto.score = data.best_solve;
       createQuizLogDto.userQuiz_id = userQuiz;
       createQuizLogDto.wrongList_id = wrongList;
+      createQuizLogDto.quiz_title = userQuiz.quiz_id.title;
+      createQuizLogDto.score = data.best_solve;
+      createQuizLogDto.max_words = userQuiz.quiz_id.max_words;
       const quizLog = await this.quizLogRepository.save(createQuizLogDto);
       // console.log(quizLog);
 
@@ -258,10 +273,32 @@ export class UsersService {
     }
   }
 
+  // 학생 회원 정보 모두 가져오기
+  async getAllStudentUser(req: IncomingMessage) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+      if (userInfo.role !== 'admin') {
+        throw new HttpException('관리자가 아닙니다.', 400);
+      }
+      const users = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.role = :role', { role: Roles.STUDENT })
+        .getMany();
+      const filterdUsers = users.map((item) => ({
+        ...item,
+        password: '',
+        username: '',
+      }));
+      return filterdUsers;
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
   // 회원 정보 모두 가져오기
   async getAllUser(req: IncomingMessage) {
     try {
-      const userInfo: any = await jwt(req.headers.authorization);
+      const userInfo: Payload = await jwt(req.headers.authorization);
       if (userInfo.role !== 'admin') {
         throw new HttpException('관리자가 아닙니다.', 400);
       }
@@ -286,6 +323,7 @@ export class UsersService {
     }
   }
 
+  // 퀴즈 로그 불러오기
   async getQuizLog(req: IncomingMessage) {
     const userInfo: any = await jwt(req.headers.authorization);
 
@@ -314,9 +352,9 @@ export class UsersService {
               quizLog_id: _quizLog.quizLog_id,
               userQuiz_id: _userQuiz.userQuiz_id,
               date: _quizLog.created_at,
-              title: _userQuiz.quiz_id.title,
+              title: _quizLog.quiz_title,
               score: _quizLog.score,
-              probCount: _userQuiz.quiz_id.max_words,
+              probCount: _quizLog.max_words,
             };
           }),
         );

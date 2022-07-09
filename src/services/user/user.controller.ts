@@ -16,7 +16,7 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from './jwt/jwt.guard';
 import { IncomingMessage } from 'http';
-import { UpdateUserQuizDto } from './dto/userQuiz.dto';
+import { UpdateUserQuizDto, CreateUserQuizDto } from './dto/userQuiz.dto';
 import { UserQuizUpadteData } from './user.types';
 
 @Controller('auth')
@@ -42,6 +42,16 @@ export class UsersController {
     return await this.usersService.validate(req);
   }
 
+  // 유저퀴즈 생성
+  @UseGuards(JwtAuthGuard)
+  @Post('userQuiz/create')
+  async createUserQuiz(
+    @Body() data: { users: number[]; quiz_id: number },
+    @Req() req: IncomingMessage,
+  ) {
+    return await this.usersService.createUserQuiz(data, req);
+  }
+
   // 유저퀴즈 업데이트
   @UseGuards(JwtAuthGuard)
   @Patch('userQuiz/update')
@@ -50,6 +60,13 @@ export class UsersController {
     @Req() req: IncomingMessage,
   ) {
     return await this.usersService.updateUserQuiz(data, req);
+  }
+
+  // 회원정보 모두 불러오기
+  @UseGuards(JwtAuthGuard)
+  @Get('user/student/all')
+  async getAllStudentUser(@Req() req: IncomingMessage) {
+    return await this.usersService.getAllStudentUser(req);
   }
 
   // 회원정보 모두 불러오기

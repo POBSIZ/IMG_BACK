@@ -12,14 +12,6 @@ export class CreateUserQuizDto {
   // 퀴즈 ID
   @IsNotEmpty()
   quiz_id: QuizEntity;
-
-  // 시도횟수
-  @IsNotEmpty()
-  try_count: number;
-
-  // 최고성적
-  @IsNotEmpty()
-  best_solve: number;
 }
 
 export class UpdateUserQuizDto extends PartialType(CreateUserQuizDto) {

@@ -65,17 +65,17 @@ export class UserEntity extends BaseEntity {
    * @param {school, grade, } Data 학교 학년
    */
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, default: null })
   school: string; // 학교
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, default: null })
   grade: string; // 학년
 
   @ManyToOne((type) => ClassEntity, (_class) => _class.class_id, {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'class_id' })
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: null })
   class_id: ClassEntity; // 반 ID
 
   /**
@@ -83,13 +83,13 @@ export class UserEntity extends BaseEntity {
    * @param {address} Data
    */
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, default: null })
   address: string; // 주소
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, default: null })
   zip: string; // 우편번호
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, default: null })
   address_detail: string; // 상세 주소
 
   @Column({ type: 'boolean', nullable: true, default: false })
@@ -103,7 +103,7 @@ export class UserEntity extends BaseEntity {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'academy_id' })
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: null })
   academy_id: AcademyEntity; // 학원 ID
 
   @BeforeInsert()
