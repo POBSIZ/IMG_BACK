@@ -83,7 +83,7 @@ export class QuizsController {
     return await this.quizsService.deleteQuiz(id, req);
   }
 
-  // 퀴즈 로그 불러오기
+  // 내 퀴즈 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('my')
   async getMyQuizAll(@Req() req: IncomingMessage) {

@@ -15,6 +15,8 @@ import { QuizLogEntity } from './entities/quizLog.entity';
 import { ProbEntity } from '../quiz/entities/prob.entity';
 import { AcademyEntity } from '../academy/entities/academy.entity';
 import { ClassEntity } from '../academy/entities/class.entity';
+import { OptionEntity } from '../quiz/entities/option.entity';
+import { AudioEntity } from '../audio/entities/audio.entity';
 
 @Module({
   imports: [
@@ -26,8 +28,10 @@ import { ClassEntity } from '../academy/entities/class.entity';
       WrongEntity,
       QuizLogEntity,
       ProbEntity,
+      OptionEntity,
       AcademyEntity,
       ClassEntity,
+      AudioEntity,
     ]),
     // session을 사용하지 않을 예정이기 때문에 false
     PassportModule.register({ defaultStrategy: 'jwt', session: false }),

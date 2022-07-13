@@ -34,10 +34,17 @@ import { CreateWrongListDto } from './dto/wrongList.dto';
 
 import { ProbEntity } from '../quiz/entities/prob.entity';
 
-import { QuizLogItemType, UserQuizUpadteData } from './user.types';
+import {
+  AnswerListItem,
+  QuizLogItemType,
+  QuizResultType,
+  UserQuizUpadteData,
+} from './user.types';
 import { ConfigService } from '@nestjs/config';
 import { AcademyEntity } from '../academy/entities/academy.entity';
 import { ClassEntity } from '../academy/entities/class.entity';
+import { OptionEntity } from '../quiz/entities/option.entity';
+import { AudioEntity } from '../audio/entities/audio.entity';
 
 @Injectable()
 export class UsersService {
@@ -51,8 +58,14 @@ export class UsersService {
     @InjectRepository(QuizEntity)
     private readonly quizRepository: Repository<QuizEntity>,
 
+    @InjectRepository(AudioEntity)
+    private readonly audioRepository: Repository<AudioEntity>,
+
     @InjectRepository(ProbEntity)
     private readonly probRepository: Repository<ProbEntity>,
+
+    @InjectRepository(OptionEntity)
+    private readonly optionRepository: Repository<OptionEntity>,
 
     @InjectRepository(QuizLogEntity)
     private readonly quizLogRepository: Repository<QuizLogEntity>,
@@ -342,6 +355,7 @@ export class UsersService {
     const userQuizs = await this.userQuizRepository
       .createQueryBuilder('userQuiz')
       .leftJoinAndSelect('userQuiz.user_id', 'user_id')
+      .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
       .where('userQuiz.user_id = :user_id', {
         user_id: Number(userInfo.user_id),
       })
@@ -360,6 +374,7 @@ export class UsersService {
         return await Promise.all(
           quizLogs.map(async (_quizLog) => {
             return {
+              quiz_id: _userQuiz.quiz_id.quiz_id,
               quizLog_id: _quizLog.quizLog_id,
               userQuiz_id: _userQuiz.userQuiz_id,
               date: _quizLog.created_at,
@@ -373,5 +388,101 @@ export class UsersService {
     );
 
     return data;
+  }
+
+  // 퀴즈 오답 불러오기
+  /**
+   *
+   * @param {string} param quizLog_id
+   * @param {IncomingMessage} req
+   */
+  async getWrongList(id: string, req: IncomingMessage) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const quizLog = await this.quizLogRepository
+        .createQueryBuilder('quizLog')
+        .where('quizLog.quizLog_id = :quizLog_id', { quizLog_id: Number(id) })
+        .leftJoinAndSelect('quizLog.wrongList_id', 'wrongList_id')
+        .leftJoinAndSelect('quizLog.userQuiz_id', 'userQuiz_id')
+        .leftJoinAndSelect('userQuiz_id.quiz_id', 'quiz_id')
+        .getOne();
+
+      const wrongs = await this.wrongRepository
+        .createQueryBuilder('wrong')
+        .where('wrong.wrongList_id = :wrongList_id', {
+          wrongList_id: quizLog.wrongList_id.wrongList_id,
+        })
+        .leftJoinAndSelect('wrong.prob_id', 'prob_id')
+        .getMany();
+
+      const worngIdList = await Promise.all(
+        wrongs.map((item) => item.prob_id.prob_id),
+      );
+
+      const probs = await this.probRepository
+        .createQueryBuilder('prob')
+        .where('prob.quiz_id = :quiz_id', {
+          quiz_id: quizLog.userQuiz_id.quiz_id.quiz_id,
+        })
+        .leftJoinAndSelect('prob.quiz_id', 'quiz_id')
+        .leftJoinAndSelect('prob.word_id', 'word_id')
+        .getMany();
+
+      const list: AnswerListItem[] = await Promise.all(
+        probs.map(async (item, i) => {
+          const isWrong = worngIdList.includes(item.prob_id);
+          const wrongWord = wrongs.filter(
+            (wrong) => Number(wrong.prob_id.prob_id) === Number(item.prob_id),
+          )[0]?.wrong_word;
+
+          const audio = await this.audioRepository
+            .createQueryBuilder('audio')
+            .where('audio.word_id = :word_id', {
+              word_id: item.word_id.word_id,
+            })
+            .getOne();
+
+          const options = await this.optionRepository
+            .createQueryBuilder('option')
+            .where('option.prob_id = :prob_id', {
+              prob_id: Number(item.prob_id),
+            })
+            .leftJoinAndSelect('option.word_id', 'word_id')
+            .getMany();
+
+          const optionList = await Promise.all(
+            options.map((item) => item.word_id.meaning),
+          );
+
+          const answer: [number, string] = isWrong
+            ? [optionList.indexOf(wrongWord), wrongWord]
+            : [optionList.indexOf(item.word_id.meaning), item.word_id.meaning];
+
+          return {
+            id: i,
+            prob_id: Number(item.prob_id),
+            answer: answer,
+            correctWordId: optionList.indexOf(item.word_id.meaning),
+            correctWord: item.word_id.word,
+            options: optionList,
+            diacritic: item.word_id.diacritic,
+            audio: audio.url,
+          };
+        }),
+      );
+
+      const data: QuizResultType = {
+        id: Number(quizLog.userQuiz_id.quiz_id.quiz_id),
+        title: quizLog.userQuiz_id.quiz_id.title,
+        list: list,
+        corrCount: quizLog.score,
+      };
+
+      return data;
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
   }
 }

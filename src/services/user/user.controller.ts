@@ -89,4 +89,16 @@ export class UsersController {
   async getQuizLog(@Req() req: IncomingMessage) {
     return await this.usersService.getQuizLog(req);
   }
+
+  // 퀴즈 오답 불러오기
+  @UseGuards(JwtAuthGuard)
+  @Get('quiz/wrongList/:id')
+  /**
+   *
+   * @param {string} param quizLog_id
+   * @param {IncomingMessage} req
+   */
+  async getWrongList(@Param('id') id: string, @Req() req: IncomingMessage) {
+    return await this.usersService.getWrongList(id, req);
+  }
 }

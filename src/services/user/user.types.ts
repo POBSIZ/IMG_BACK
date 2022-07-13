@@ -18,30 +18,16 @@ export interface AnswerListItem {
   audio: string;
 }
 
+export interface QuizResultType {
+  title: string;
+  id: number;
+  list: AnswerListItem[];
+  corrCount: number;
+}
+
 export interface UserQuizUpadteData {
   userQuiz_id: number | bigint;
   quiz_id: number | bigint;
   best_solve: number;
   answerList: AnswerListItem[];
 }
-
-// [
-//   [
-//     {
-//       quizLog_id: '1',
-//       userQuiz_id: '1',
-//       date: '2022-06-28T11:02:12.877Z',
-//       title: '교육부선정 10단어 A',
-//       score: 3,
-//       probCount: 10
-//     },
-//     {
-//       quizLog_id: '2',
-//       userQuiz_id: '1',
-//       date: ;,
-//       title: '교육부선정 10단어 A',
-//       score: 4,
-//       probCount: 10
-//     }
-//   ]
-// ]

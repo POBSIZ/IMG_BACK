@@ -36,7 +36,7 @@ export class WrongEntity extends BaseEntity {
   @JoinColumn({ name: 'prob_id' })
   prob_id: ProbEntity;
 
-  // 오답 단어
+  // 오답 단어 (유저가 선택한 단어)
   @Column({ type: 'varchar' })
   wrong_word: string;
 }
