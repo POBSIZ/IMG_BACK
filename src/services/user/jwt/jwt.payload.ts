@@ -10,6 +10,9 @@ export interface Payload {
   // 이름
   name: string;
 
+  // 닉네임
+  nickname: string;
+
   // 전화번호
   phone: string;
 

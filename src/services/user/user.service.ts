@@ -97,6 +97,7 @@ export class UsersService {
     try {
       if (isExist === null) {
         createUserDto.name = reqData.name;
+        createUserDto.nickname = reqData.nickname;
         createUserDto.username = reqData.username;
         createUserDto.phone = reqData.phone;
         createUserDto.role = Roles[reqData.role.toUpperCase()];

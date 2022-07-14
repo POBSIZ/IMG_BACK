@@ -37,6 +37,10 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'varchar' })
   name: string;
 
+  // 닉네임
+  @Column({ type: 'varchar' })
+  nickname: string;
+
   // 아이디
   @Column({ type: 'varchar', unique: true })
   username: string;

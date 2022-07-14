@@ -8,6 +8,10 @@ export class CreateUserDto {
   @IsNotEmpty()
   name: string;
 
+  // 닉네임
+  @IsNotEmpty()
+  nickname: string;
+
   // 아이디
   @IsNotEmpty()
   username: string;
