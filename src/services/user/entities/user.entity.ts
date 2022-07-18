@@ -42,7 +42,7 @@ export class UserEntity extends BaseEntity {
   name: string;
 
   // 닉네임
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', nullable: true, default: null })
   nickname: string;
 
   // 아이디

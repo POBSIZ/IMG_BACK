@@ -30,9 +30,11 @@ import { AcademyModule } from './services/academy/academy.module';
       // username: `postgres`,
       // password: `010911`,
       // database: `img`,
+
       username: `imgls`,
       password: `imgls0629`,
       database: `imgls`,
+
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
