@@ -20,6 +20,8 @@ import { QuizEntity } from '../quiz/entities/quiz.entity';
 import { BookEntity } from '../quiz/entities/book.entity';
 
 import { JwtService } from '@nestjs/jwt';
+import { CreateClassDto } from './dto/class.dto';
+import { UserQuizEntity } from '../user/entities/userQuiz.entity';
 
 @Injectable()
 export class AcademyService {
@@ -38,6 +40,9 @@ export class AcademyService {
 
     @InjectRepository(BookEntity)
     private readonly bookRepository: Repository<BookEntity>,
+
+    @InjectRepository(UserQuizEntity)
+    private readonly userQuizRepository: Repository<UserQuizEntity>,
 
     private jwtService: JwtService,
   ) {}
@@ -91,6 +96,73 @@ export class AcademyService {
     }
   }
 
+  // 반 생성
+  async createClass(
+    reqData: Pick<CreateClassDto, 'name'>,
+    req: IncomingMessage,
+  ) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const academy = await this.academyRepository.findOneBy([
+        {
+          academy_id: Number(userInfo.academy_id),
+        },
+      ]);
+
+      const createClassDto = new CreateClassDto();
+      createClassDto.academy_id = academy;
+      createClassDto.name = reqData.name;
+
+      await this.classRepository.save(createClassDto);
+
+      return 'Success';
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 반 모두 불러오기
+  async getClassAll(req: IncomingMessage) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const classes = await this.classRepository
+        .createQueryBuilder('class')
+        .where('class.academy_id = :academy_id', {
+          academy_id: Number(userInfo.academy_id),
+        })
+        .getMany();
+
+      return classes;
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 반 삭제하기
+  async removeClass(class_id: string, req: IncomingMessage) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const selectClass = await this.classRepository
+        .createQueryBuilder('class')
+        .where('class.academy_id = :academy_id', {
+          academy_id: Number(userInfo.academy_id),
+        })
+        .andWhere('class.class_id = :class_id', { class_id: Number(class_id) })
+        .getOne();
+
+      await this.classRepository.remove(selectClass);
+      return 'Success';
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
   // 학원 검색
   async search(str: { str: string }) {
     try {
@@ -131,10 +203,90 @@ export class AcademyService {
         .where('user.academy_id = :academy_id', {
           academy_id: Number(userInfo.academy_id),
         })
+        .leftJoinAndSelect('user.academy_id', 'academy_id')
+        .leftJoinAndSelect('user.class_id', 'class_id')
         .getMany();
 
-      return users;
+      return users.map((item) => ({
+        ...item,
+        academy_name: item.academy_id.name,
+        class_name: item.class_id.name,
+      }));
     } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 내 학원 반,학생 모두 불러오기
+  async getAllClassStudent(req: IncomingMessage) {
+    const userInfoGen = async (_users: UserEntity[]) => {
+      return await Promise.all(
+        _users.map(async (user) => {
+          const userQuizs = await this.userQuizRepository
+            .createQueryBuilder('uq')
+            .where('uq.user_id = :user_id', { user_id: Number(user.user_id) })
+            .leftJoinAndSelect('uq.quiz_id', 'quiz_id')
+            .getMany();
+
+          return {
+            title: user.name,
+            data: { ...user },
+            list: userQuizs.map((_uq) => ({
+              title: _uq.quiz_id.title,
+              data: { ..._uq },
+            })),
+          };
+        }),
+      );
+    };
+
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const classes = await this.classRepository
+        .createQueryBuilder('class')
+        .where('class.academy_id = :academy_id', {
+          academy_id: Number(userInfo.academy_id),
+        })
+        .getMany();
+
+      const list: any[] = [];
+
+      await Promise.all(
+        classes.map(async (item) => {
+          const users = await this.userRepository
+            .createQueryBuilder('user')
+            .where('user.class_id = :class_id', {
+              class_id: Number(item.class_id),
+            })
+            .getMany();
+
+          list.push({
+            title: `${item.name} / ${users.length}명`,
+            data: { ...item },
+            list: await userInfoGen(users),
+          });
+        }),
+      );
+
+      const users = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.academy_id = :academy_id', {
+          academy_id: Number(userInfo.academy_id),
+        })
+        .andWhere('user.class_id IS NULL')
+        .getMany();
+
+      list.push({
+        title: '반 배정안됨',
+        data: null,
+        list: await userInfoGen(users),
+      });
+
+      return list;
+    } catch (error) {
+      console.log(error);
       throw new HttpException(error, 500);
     }
   }

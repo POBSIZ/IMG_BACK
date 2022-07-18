@@ -13,6 +13,7 @@ import { IncomingMessage } from 'http';
 import { JwtAuthGuard } from '../user/jwt/jwt.guard';
 import { AcademyService } from './academy.service';
 import { CreateAcademyDto } from './dto/academy.dto';
+import { CreateClassDto } from './dto/class.dto';
 
 @Controller('academy')
 export class AcademyController {
@@ -23,6 +24,33 @@ export class AcademyController {
   @Post('create')
   async create(@Body() reqData: CreateAcademyDto, @Req() req: IncomingMessage) {
     return await this.academyService.create(reqData, req);
+  }
+
+  // 반 생성
+  @UseGuards(JwtAuthGuard)
+  @Post('class/create')
+  async createClass(
+    @Body() reqData: Pick<CreateClassDto, 'name'>,
+    @Req() req: IncomingMessage,
+  ) {
+    return await this.academyService.createClass(reqData, req);
+  }
+
+  // 모든 반 불러오기
+  @UseGuards(JwtAuthGuard)
+  @Get('class/all')
+  async getClassAll(@Req() req: IncomingMessage) {
+    return await this.academyService.getClassAll(req);
+  }
+
+  // 모든 반 불러오기
+  @UseGuards(JwtAuthGuard)
+  @Delete('class/delete/:id')
+  async removeClass(
+    @Param('id') class_id: string,
+    @Req() req: IncomingMessage,
+  ) {
+    return await this.academyService.removeClass(class_id, req);
   }
 
   // 학원 검색
@@ -42,6 +70,13 @@ export class AcademyController {
   @Get('student/all')
   async getAllStudent(@Req() req: IncomingMessage) {
     return await this.academyService.getAllStudent(req);
+  }
+
+  // 내 학원 학생, 반 모두 불러오기
+  @UseGuards(JwtAuthGuard)
+  @Get('student/info/all')
+  async getAllClassStudent(@Req() req: IncomingMessage) {
+    return await this.academyService.getAllClassStudent(req);
   }
 
   // 내 학원 퀴즈 모두 불러오기

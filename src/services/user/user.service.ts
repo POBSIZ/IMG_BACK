@@ -14,6 +14,7 @@ import * as bcrypt from 'bcrypt';
 import { Payload } from './jwt/jwt.payload';
 import { IncomingMessage } from 'http';
 import jwt from 'jwt-decode';
+import * as XLSX from 'xlsx';
 
 import { Roles, UserEntity } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -45,6 +46,8 @@ import { AcademyEntity } from '../academy/entities/academy.entity';
 import { ClassEntity } from '../academy/entities/class.entity';
 import { OptionEntity } from '../quiz/entities/option.entity';
 import { AudioEntity } from '../audio/entities/audio.entity';
+import { Response } from 'express';
+import { WordEntity } from '../quiz/entities/word.entity';
 
 @Injectable()
 export class UsersService {
@@ -57,6 +60,9 @@ export class UsersService {
 
     @InjectRepository(QuizEntity)
     private readonly quizRepository: Repository<QuizEntity>,
+
+    @InjectRepository(WordEntity)
+    private readonly wordRepository: Repository<WordEntity>,
 
     @InjectRepository(AudioEntity)
     private readonly audioRepository: Repository<AudioEntity>,
@@ -184,6 +190,33 @@ export class UsersService {
       };
       // console.log(payload);
       return this.jwtService.sign(payload);
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 학생 반 배정
+  async setStudentClass(
+    data: { class_id: string; user_id: string },
+    req: IncomingMessage,
+  ) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const user = await this.userRepository.findOneBy([
+        { user_id: Number(data.user_id) },
+      ]);
+
+      const studentClass = await this.classRepository.findOneBy([
+        {
+          class_id: Number(data.class_id),
+        },
+      ]);
+
+      user.class_id = studentClass;
+
+      await this.userRepository.update(Number(user.user_id), user);
     } catch (error) {
       console.log(error);
       throw new HttpException(error, 500);
@@ -339,9 +372,9 @@ export class UsersService {
   async getUserInfo(param, req: IncomingMessage) {
     try {
       const userInfo: any = await jwt(req.headers.authorization);
-      if (userInfo.role !== 'admin') {
-        throw new HttpException('관리자가 아닙니다.', 400);
-      }
+      // if (userInfo.role !== 'admin') {
+      //   throw new HttpException('관리자가 아닙니다.', 400);
+      // }
       const user = await this.userRepository.findOneBy([{ user_id: param.id }]);
       return user;
     } catch (error) {
@@ -389,6 +422,53 @@ export class UsersService {
     );
 
     return data;
+  }
+
+  // 연결 계정 퀴즈 로그 불러오기
+  async getChainQuizLog(id: string, req: IncomingMessage) {
+    try {
+      const userInfo: any = await jwt(req.headers.authorization);
+
+      const userQuizs = await this.userQuizRepository
+        .createQueryBuilder('userQuiz')
+        .leftJoinAndSelect('userQuiz.user_id', 'user_id')
+        .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
+        .where('userQuiz.user_id = :user_id', {
+          user_id: Number(id),
+        })
+        .getMany();
+
+      const data = await Promise.all(
+        userQuizs.map(async (_userQuiz) => {
+          const quizLogs = await this.quizLogRepository
+            .createQueryBuilder('quizLog')
+            .leftJoinAndSelect('quizLog.userQuiz_id', 'userQuiz_id')
+            .where('quizLog.userQuiz_id = :userQuiz_id', {
+              userQuiz_id: Number(_userQuiz.userQuiz_id),
+            })
+            .getMany();
+
+          return await Promise.all(
+            quizLogs.map(async (_quizLog) => {
+              return {
+                quiz_id: _userQuiz.quiz_id.quiz_id,
+                quizLog_id: _quizLog.quizLog_id,
+                userQuiz_id: _userQuiz.userQuiz_id,
+                date: _quizLog.created_at,
+                title: _quizLog.quiz_title,
+                score: _quizLog.score,
+                probCount: _quizLog.max_words,
+              };
+            }),
+          );
+        }),
+      );
+
+      return data;
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
   }
 
   // 퀴즈 오답 불러오기
@@ -483,6 +563,114 @@ export class UsersService {
       return data;
     } catch (error) {
       console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 오답 목록 엑셀 다운 받기
+  async getWrongListExcel(id: string, req: IncomingMessage, res: Response) {
+    try {
+      const quizLog = await this.quizLogRepository
+        .createQueryBuilder('quizLog')
+        .where('quizLog.quizLog_id = :quizLog_id', { quizLog_id: Number(id) })
+        .leftJoinAndSelect('quizLog.wrongList_id', 'wrongList_id')
+        .getOne();
+
+      const wrongs = await this.wrongRepository
+        .createQueryBuilder('wrong')
+        .where('wrong.wrongList_id = :wrongList_id', {
+          wrongList_id: Number(quizLog.wrongList_id.wrongList_id),
+        })
+        .leftJoinAndSelect('wrong.prob_id', 'prob_id')
+        .leftJoinAndSelect('prob_id.word_id', 'word_id')
+        .getMany();
+
+      const wordList = await Promise.all(
+        wrongs.map(async (item) => {
+          // const word = await this.wordRepository
+          //   .createQueryBuilder('word')
+          //   .where('word.word_id = :word_id', {
+          //     word_id: item.prob_id.word_id.word_id,
+          //   });.prob_id.word_id
+          return {
+            단어: item.prob_id.word_id.word,
+            발음: item.prob_id.word_id.diacritic,
+            주요뜻: item.prob_id.word_id.meaning,
+            메모: item.prob_id.word_id.type,
+          };
+        }),
+      );
+      // step 1. workbook 생성
+      const wb = XLSX.utils.book_new();
+
+      // step 2. 시트 만들기
+      const newWorksheet = XLSX.utils.json_to_sheet(wordList);
+
+      // step 3. workbook에 새로만든 워크시트에 이름을 주고 붙인다.
+      XLSX.utils.book_append_sheet(wb, newWorksheet, '');
+
+      // step 4. 파일을 생성한다. (메모리에만 저장)
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+
+      // step 5. 파일을 response 한다.
+      res.end(Buffer.from(wbout, 'base64'));
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 연결 ID 요청
+  async requestChain(data: { target: string }, req: IncomingMessage) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const targetUser = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.username = :username', { username: data.target })
+        .getOne();
+
+      targetUser.chain_id = userInfo.user_id;
+
+      await this.userRepository.update(Number(targetUser.user_id), targetUser);
+
+      return 'Success';
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 연결 ID 요청 승인/거절
+  async responseChain(
+    data: { target: string; status: boolean },
+    req: IncomingMessage,
+  ) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const user = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.user_id = :user_id', { user_id: Number(userInfo.user_id) })
+        .getOne();
+
+      user.chain_id = null;
+
+      const targetUser = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.user_id = :user_id', { user_id: Number(data.target) })
+        .getOne();
+
+      if (data.status) {
+        targetUser.chain_id = Number(userInfo.user_id);
+        await this.userRepository.update(
+          Number(targetUser.user_id),
+          targetUser,
+        );
+      }
+
+      await this.userRepository.update(Number(user.user_id), user);
+
+      return 'Success';
+    } catch (error) {
       throw new HttpException(error, 500);
     }
   }

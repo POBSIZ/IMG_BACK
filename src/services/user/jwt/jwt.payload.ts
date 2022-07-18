@@ -7,6 +7,9 @@ export interface Payload {
   // 유저 ID
   user_id: bigint | number;
 
+  // 연결 ID
+  chain_id: bigint | number;
+
   // 이름
   name: string;
 

@@ -9,6 +9,7 @@ import {
   Req,
   Res,
   UseGuards,
+  Header,
 } from '@nestjs/common';
 
 import { UsersService } from './user.service';
@@ -18,6 +19,7 @@ import { JwtAuthGuard } from './jwt/jwt.guard';
 import { IncomingMessage } from 'http';
 import { UpdateUserQuizDto, CreateUserQuizDto } from './dto/userQuiz.dto';
 import { UserQuizUpadteData } from './user.types';
+import { Response } from 'express';
 
 @Controller('auth')
 export class UsersController {
@@ -40,6 +42,16 @@ export class UsersController {
   @Get('validate')
   async validate(@Req() req: IncomingMessage) {
     return await this.usersService.validate(req);
+  }
+
+  // 토큰 유효성 검사
+  @UseGuards(JwtAuthGuard)
+  @Patch('user/set/class')
+  async setStudentClass(
+    @Body() data: { class_id: string; user_id: string },
+    @Req() req: IncomingMessage,
+  ) {
+    return await this.usersService.setStudentClass(data, req);
   }
 
   // 유저퀴즈 생성
@@ -90,6 +102,13 @@ export class UsersController {
     return await this.usersService.getQuizLog(req);
   }
 
+  // 연결 계정 퀴즈 로그 불러오기
+  @UseGuards(JwtAuthGuard)
+  @Get('quiz/log/chain/:id')
+  async getChainQuizLog(@Param('id') id: string, @Req() req: IncomingMessage) {
+    return await this.usersService.getChainQuizLog(id, req);
+  }
+
   // 퀴즈 오답 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('quiz/wrongList/:id')
@@ -100,5 +119,46 @@ export class UsersController {
    */
   async getWrongList(@Param('id') id: string, @Req() req: IncomingMessage) {
     return await this.usersService.getWrongList(id, req);
+  }
+
+  // 퀴즈 오답 불러오기
+  // @UseGuards(JwtAuthGuard)
+  @Get('quiz/wrongList/excel/:id')
+  @Header(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  )
+  @Header('Content-Disposition', 'attachment; filename=users.xlsx')
+  /**
+   *
+   * @param {string} param quizLog_id
+   * @param {IncomingMessage} req
+   */
+  async getWrongListExcel(
+    @Param('id') id: string,
+    @Req() req: IncomingMessage,
+    @Res() res: Response,
+  ) {
+    return await this.usersService.getWrongListExcel(id, req, res);
+  }
+
+  // 연결 ID 요청
+  @UseGuards(JwtAuthGuard)
+  @Patch('chain/request')
+  async requestChain(
+    @Body() data: { target: string },
+    @Req() req: IncomingMessage,
+  ) {
+    return await this.usersService.requestChain(data, req);
+  }
+
+  // 연결 ID 요청 승인/거절
+  @UseGuards(JwtAuthGuard)
+  @Patch('chain/response')
+  async responseChain(
+    @Body() data: { target: string; status: boolean },
+    @Req() req: IncomingMessage,
+  ) {
+    return await this.usersService.responseChain(data, req);
   }
 }

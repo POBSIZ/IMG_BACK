@@ -8,6 +8,7 @@ import { ClassEntity } from './entities/class.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { QuizEntity } from '../quiz/entities/quiz.entity';
 import { BookEntity } from '../quiz/entities/book.entity';
+import { UserQuizEntity } from '../user/entities/userQuiz.entity';
 
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -21,6 +22,7 @@ import { JwtStrategy } from '../user/jwt/jwt.strategy';
       UserEntity,
       QuizEntity,
       BookEntity,
+      UserQuizEntity,
     ]),
     // session을 사용하지 않을 예정이기 때문에 false
     PassportModule.register({ defaultStrategy: 'jwt', session: false }),

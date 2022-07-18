@@ -9,6 +9,7 @@ import { JwtStrategy } from './jwt/jwt.strategy';
 import { UserEntity } from './entities/user.entity';
 import { UserQuizEntity } from './entities/userQuiz.entity';
 import { QuizEntity } from '../quiz/entities/quiz.entity';
+import { WordEntity } from '../quiz/entities/word.entity';
 import { WrongListEntity } from './entities/wrongList.entity';
 import { WrongEntity } from './entities/wrong.entity';
 import { QuizLogEntity } from './entities/quizLog.entity';
@@ -24,6 +25,7 @@ import { AudioEntity } from '../audio/entities/audio.entity';
       UserEntity,
       UserQuizEntity,
       QuizEntity,
+      WordEntity,
       WrongListEntity,
       WrongEntity,
       QuizLogEntity,
