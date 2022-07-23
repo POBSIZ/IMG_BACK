@@ -210,7 +210,7 @@ export class AcademyService {
       return users.map((item) => ({
         ...item,
         academy_name: item.academy_id.name,
-        class_name: item.class_id.name,
+        class_name: item?.class_id?.name,
       }));
     } catch (error) {
       console.log(error);
@@ -220,6 +220,12 @@ export class AcademyService {
 
   // 내 학원 반,학생 모두 불러오기
   async getAllClassStudent(req: IncomingMessage) {
+    const convertDateToYMDm = (_date) => {
+      const _dateObj = new Date(_date).toISOString();
+      const dateObj = new Date(_dateObj);
+      return `${dateObj.getFullYear()}/${dateObj.getMonth()}/${dateObj.getDay()} ${dateObj.getHours()}:${dateObj.getMinutes()}`;
+    };
+
     const userInfoGen = async (_users: UserEntity[]) => {
       return await Promise.all(
         _users.map(async (user) => {
@@ -233,7 +239,9 @@ export class AcademyService {
             title: user.name,
             data: { ...user },
             list: userQuizs.map((_uq) => ({
-              title: _uq.quiz_id.title,
+              title: `${_uq.quiz_id.title}, ${_uq.best_solve}/${
+                _uq.quiz_id.max_words
+              }, ${convertDateToYMDm(_uq.recent_date)}`,
               data: { ..._uq },
             })),
           };

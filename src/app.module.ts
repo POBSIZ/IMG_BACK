@@ -17,6 +17,7 @@ import { UserModule } from './services/user/user.module';
 import { AudioModule } from './services/audio/audio.module';
 import { QuizModule } from './services/quiz/quiz.module';
 import { AcademyModule } from './services/academy/academy.module';
+import { BoardModule } from './services/board/board.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { AcademyModule } from './services/academy/academy.module';
       type: 'postgres',
       host: 'localhost',
       port: 5432,
+
       // username: `postgres`,
       // password: `010911`,
       // database: `img`,
@@ -53,6 +55,7 @@ import { AcademyModule } from './services/academy/academy.module';
     QuizModule,
     AdminModule,
     AcademyModule,
+    BoardModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],

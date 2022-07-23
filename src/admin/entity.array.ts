@@ -15,6 +15,11 @@ import { WordEntity } from 'src/services/quiz/entities/word.entity';
 
 import { AudioEntity } from 'src/services/audio/entities/audio.entity';
 
+import { BoardEntity } from 'src/services/board/entities/board.entity';
+import { PostEntity } from 'src/services/board/entities/post.entity';
+import { CommentEntity } from 'src/services/board/entities/comment.entity';
+import { ReplyEntity } from 'src/services/board/entities/reply.entity';
+
 const EntityArr = [
   { resource: UserEntity, options: { parent: { name: '회원' } } },
   { resource: UserQuizEntity, options: { parent: { name: '회원퀴즈' } } },
@@ -30,6 +35,12 @@ const EntityArr = [
   { resource: ProbEntity, options: { parent: { name: '퀴즈' } } },
   { resource: OptionEntity, options: { parent: { name: '퀴즈' } } },
   { resource: WordEntity, options: { parent: { name: '퀴즈' } } },
+
   { resource: AudioEntity, options: { parent: { name: '음성' } } },
+
+  { resource: BoardEntity, options: { parent: { name: '게시판' } } },
+  { resource: PostEntity, options: { parent: { name: '게시판' } } },
+  { resource: CommentEntity, options: { parent: { name: '게시판' } } },
+  { resource: ReplyEntity, options: { parent: { name: '게시판' } } },
 ];
 export default EntityArr;
