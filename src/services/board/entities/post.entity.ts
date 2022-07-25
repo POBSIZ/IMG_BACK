@@ -41,12 +41,12 @@ export class PostEntity extends BaseEntity {
   title: string;
 
   // 설명
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', nullable: true, default: null })
   desc: string;
 
   // 내용
   @Column({ type: 'text' })
-  contents: string;
+  content: string;
 
   // 추천수
   @Column({ type: 'bigint', default: 0 })

@@ -198,25 +198,27 @@ export class UsersService {
 
   // 학생 반 배정
   async setStudentClass(
-    data: { class_id: string; user_id: string },
+    data: { class_id: string; user_id: string[] },
     req: IncomingMessage,
   ) {
     try {
       const userInfo: Payload = await jwt(req.headers.authorization);
 
-      const user = await this.userRepository.findOneBy([
-        { user_id: Number(data.user_id) },
-      ]);
+      data.user_id.forEach(async (item) => {
+        const user = await this.userRepository.findOneBy([
+          { user_id: Number(item) },
+        ]);
 
-      const studentClass = await this.classRepository.findOneBy([
-        {
-          class_id: Number(data.class_id),
-        },
-      ]);
+        const studentClass = await this.classRepository.findOneBy([
+          {
+            class_id: Number(data.class_id),
+          },
+        ]);
 
-      user.class_id = studentClass;
+        user.class_id = studentClass;
 
-      await this.userRepository.update(Number(user.user_id), user);
+        await this.userRepository.update(Number(user.user_id), user);
+      });
     } catch (error) {
       console.log(error);
       throw new HttpException(error, 500);

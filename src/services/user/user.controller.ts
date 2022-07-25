@@ -48,7 +48,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Patch('user/set/class')
   async setStudentClass(
-    @Body() data: { class_id: string; user_id: string },
+    @Body() data: { class_id: string; user_id: string[] },
     @Req() req: IncomingMessage,
   ) {
     return await this.usersService.setStudentClass(data, req);
