@@ -5,6 +5,10 @@ import { UserQuizEntity } from '../entities/userQuiz.entity';
 import { WrongListEntity } from '../entities/wrongList.entity';
 
 export class CreateQuizLogDto {
+  // 유저 ID
+  @IsNotEmpty()
+  user_id: UserEntity;
+
   // 유저퀴즈 ID
   @IsNotEmpty()
   userQuiz_id: UserQuizEntity;

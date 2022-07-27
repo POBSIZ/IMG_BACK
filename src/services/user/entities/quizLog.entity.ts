@@ -23,11 +23,19 @@ export class QuizLogEntity extends BaseEntity {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   quizLog_id: bigint | number;
 
+  // 유저 ID
+  @ManyToOne((type) => UserEntity, (user) => user.user_id, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'user_id' })
+  user_id: UserEntity;
+
   // 유저퀴즈 ID
   @ManyToOne((type) => UserQuizEntity, (userQuiz) => userQuiz.userQuiz_id, {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'userQuiz_id' })
+  @Column({ nullable: true })
   userQuiz_id: UserQuizEntity;
 
   // 오답목록 ID
@@ -35,6 +43,7 @@ export class QuizLogEntity extends BaseEntity {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'wrongList_id' })
+  @Column({ nullable: true })
   wrongList_id: WrongListEntity;
 
   // 퀴즈 제목

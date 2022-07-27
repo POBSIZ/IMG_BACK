@@ -74,6 +74,13 @@ export class UsersController {
     return await this.usersService.updateUserQuiz(data, req);
   }
 
+  // 유저퀴즈 삭제
+  @UseGuards(JwtAuthGuard)
+  @Delete('userQuiz/delete/:id')
+  async deleteUserQuiz(@Param('id') uqid: string, @Req() req: IncomingMessage) {
+    return await this.usersService.deleteUserQuiz(uqid, req);
+  }
+
   // 회원정보 모두 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('user/student/all')

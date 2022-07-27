@@ -1,0 +1,2 @@
+usnm: postgres
+pwd: 000000

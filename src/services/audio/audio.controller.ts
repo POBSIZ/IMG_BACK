@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Res,
 } from '@nestjs/common';
 import { AudiosService } from './audio.service';
 import { CreateAudioDto } from './dto/create-audio.dto';
@@ -17,5 +18,10 @@ export class AudiosController {
   @Get()
   findAll() {
     return this.audiosService.findAll();
+  }
+
+  @Get('get/:word')
+  async getAudio(@Param('word') word, @Res() res) {
+    return await this.audiosService.getAudio(word, res);
   }
 }

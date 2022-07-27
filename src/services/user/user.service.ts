@@ -334,6 +334,24 @@ export class UsersService {
     }
   }
 
+  // 유저퀴즈 삭제
+  async deleteUserQuiz(uqid: string, req: IncomingMessage) {
+    try {
+      const userInfo: any = await jwt(req.headers.authorization);
+
+      const userQuiz = await this.userQuizRepository.findOneBy([
+        { userQuiz_id: Number(uqid) },
+      ]);
+
+      await this.userQuizRepository.remove(userQuiz);
+
+      return 'Success';
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
   // 학생 회원 정보 모두 가져오기
   async getAllStudentUser(req: IncomingMessage) {
     try {
@@ -386,44 +404,68 @@ export class UsersService {
 
   // 퀴즈 로그 불러오기
   async getQuizLog(req: IncomingMessage) {
-    const userInfo: any = await jwt(req.headers.authorization);
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
 
-    const userQuizs = await this.userQuizRepository
-      .createQueryBuilder('userQuiz')
-      .leftJoinAndSelect('userQuiz.user_id', 'user_id')
-      .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
-      .where('userQuiz.user_id = :user_id', {
-        user_id: Number(userInfo.user_id),
-      })
-      .getMany();
+      const userQuizs = await this.userQuizRepository
+        .createQueryBuilder('userQuiz')
+        .leftJoinAndSelect('userQuiz.user_id', 'user_id')
+        .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
+        .where('userQuiz.user_id = :user_id', {
+          user_id: Number(userInfo.user_id),
+        })
+        .getMany();
 
-    const data = await Promise.all(
-      userQuizs.map(async (_userQuiz) => {
-        const quizLogs = await this.quizLogRepository
-          .createQueryBuilder('quizLog')
-          .leftJoinAndSelect('quizLog.userQuiz_id', 'userQuiz_id')
-          .where('quizLog.userQuiz_id = :userQuiz_id', {
-            userQuiz_id: Number(_userQuiz.userQuiz_id),
-          })
-          .getMany();
+      const data = await Promise.all(
+        userQuizs.map(async (_userQuiz) => {
+          const quizLogs = await this.quizLogRepository
+            .createQueryBuilder('quizLog')
+            .leftJoinAndSelect('quizLog.userQuiz_id', 'userQuiz_id')
+            .where('quizLog.userQuiz_id = :userQuiz_id', {
+              userQuiz_id: Number(_userQuiz.userQuiz_id),
+            })
+            .getMany();
 
-        return await Promise.all(
-          quizLogs.map(async (_quizLog) => {
-            return {
-              quiz_id: _userQuiz.quiz_id.quiz_id,
-              quizLog_id: _quizLog.quizLog_id,
-              userQuiz_id: _userQuiz.userQuiz_id,
-              date: _quizLog.created_at,
-              title: _quizLog.quiz_title,
-              score: _quizLog.score,
-              probCount: _quizLog.max_words,
-            };
-          }),
-        );
-      }),
-    );
+          return await Promise.all(
+            quizLogs.map(async (_quizLog) => {
+              return {
+                quiz_id: _userQuiz.quiz_id.quiz_id,
+                quizLog_id: _quizLog.quizLog_id,
+                userQuiz_id: _userQuiz.userQuiz_id,
+                date: _quizLog.created_at,
+                title: _quizLog.quiz_title,
+                score: _quizLog.score,
+                probCount: _quizLog.max_words,
+              };
+            }),
+          );
+        }),
+      );
 
-    return data;
+      const noneUqLogs = await this.quizLogRepository
+        .createQueryBuilder('ql')
+        .where('ql.user_id = :user_id', { user_id: Number(userInfo.user_id) })
+        .andWhere('ql.userQuiz_id IS NULL')
+        .getMany();
+
+      noneUqLogs.forEach((item) => {
+        data.push([
+          {
+            quiz_id: NaN,
+            quizLog_id: item.quizLog_id,
+            userQuiz_id: NaN,
+            date: item.created_at,
+            title: item.quiz_title,
+            score: item.score,
+            probCount: item.max_words,
+          },
+        ]);
+      });
+
+      return data;
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
   }
 
   // 연결 계정 퀴즈 로그 불러오기
