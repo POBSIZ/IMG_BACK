@@ -236,13 +236,13 @@ export class UsersService {
 
         const user = await this.userRepository.findOneBy([
           {
-            user_id: item,
+            user_id: Number(item),
           },
         ]);
 
         const quiz = await this.quizRepository.findOneBy([
           {
-            quiz_id: data.quiz_id,
+            quiz_id: Number(data.quiz_id),
           },
         ]);
 

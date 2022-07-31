@@ -36,6 +36,10 @@ export class PostEntity extends BaseEntity {
   @Column({ nullable: false })
   user_id: UserEntity;
 
+  // 썸네일
+  @Column({ type: 'varchar', nullable: true, default: null })
+  thumbnail: string;
+
   // 제목
   @Column({ type: 'varchar' })
   title: string;

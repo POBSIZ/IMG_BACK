@@ -1,0 +1,2 @@
+/home/ubuntu/IMG_BACK/key/googleTTS/img-ls-b8adc0c6bb2d.json
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/ubuntu/IMG_BACK/key/googleTTS/img-ls-b8adc0c6bb2d.json"

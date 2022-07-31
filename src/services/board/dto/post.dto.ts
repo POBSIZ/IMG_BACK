@@ -14,6 +14,8 @@ export class CreatePostDto {
 
   @IsNotEmpty()
   content: string;
+
+  thumbnail: string;
 }
 
 export class UpdatePostDto {}

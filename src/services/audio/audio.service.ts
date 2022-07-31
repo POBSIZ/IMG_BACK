@@ -6,8 +6,6 @@ import { Repository } from 'typeorm';
 import { AudioEntity } from './entities/audio.entity';
 
 import { TextToSpeechClient } from '@google-cloud/text-to-speech';
-import util from 'util';
-import * as fs from 'fs';
 import { Response } from 'express';
 
 @Injectable()

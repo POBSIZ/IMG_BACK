@@ -53,6 +53,7 @@ export class BoardService {
         .createQueryBuilder('post')
         .where('post.board_id = :board_id', { board_id: Number(id) })
         .leftJoinAndSelect('post.user_id', 'user_id')
+        .leftJoinAndSelect('post.board_id', 'board_id')
         .cache(true)
         .getMany();
     } catch (error) {
@@ -77,6 +78,7 @@ export class BoardService {
 
       createPostDto.title = data.title;
       createPostDto.content = data.content;
+      createPostDto.thumbnail = data.thumbnail ?? null;
 
       await this.postRepository.save(createPostDto);
     } catch (error) {
