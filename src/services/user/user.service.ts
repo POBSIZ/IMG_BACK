@@ -196,6 +196,46 @@ export class UsersService {
     }
   }
 
+  // 유저 정보 수정
+  async patchUser(
+    data: {
+      user_id: string;
+      name: string;
+      nickname: string;
+      academy_id: string;
+      school: string;
+      grade: string;
+      phone: string;
+    },
+    req: IncomingMessage,
+  ) {
+    try {
+      // const userInfo: any = await jwt(req.headers.authorization);
+      const user = await this.userRepository.findOneBy([
+        { user_id: Number(data.user_id) },
+      ]);
+
+      const academy = await this.academyRepository.findOneBy([
+        {
+          academy_id: Number(data.academy_id),
+        },
+      ]);
+
+      user.name = data.name;
+      user.nickname = data.nickname;
+      user.academy_id = academy;
+      user.school = data.school;
+      user.grade = data.grade;
+      user.phone = data.phone;
+
+      await this.userRepository.update(Number(user.user_id), user);
+      return 'success';
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
   // 학생 반 배정
   async setStudentClass(
     data: { class_id: string; user_id: string[] },
@@ -319,6 +359,7 @@ export class UsersService {
       );
 
       const createQuizLogDto = new CreateQuizLogDto();
+      createQuizLogDto.user_id = user;
       createQuizLogDto.userQuiz_id = userQuiz;
       createQuizLogDto.wrongList_id = wrongList;
       createQuizLogDto.quiz_title = userQuiz.quiz_id.title;
@@ -395,7 +436,13 @@ export class UsersService {
       // if (userInfo.role !== 'admin') {
       //   throw new HttpException('관리자가 아닙니다.', 400);
       // }
-      const user = await this.userRepository.findOneBy([{ user_id: param.id }]);
+
+      const user = await this.userRepository
+        .createQueryBuilder('usr')
+        .where('usr.user_id = :user_id', { user_id: Number(param.id) })
+        .leftJoinAndSelect('usr.academy_id', 'academy_id')
+        .getOne();
+
       return user;
     } catch (error) {
       throw new HttpException(error, 500);

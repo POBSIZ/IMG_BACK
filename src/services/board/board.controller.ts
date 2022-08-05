@@ -55,6 +55,16 @@ export class BoardController {
     return this.boardService.createPost(data, req);
   }
 
+  // 게시글 수정
+  @UseGuards(JwtAuthGuard)
+  @Patch('post/patch')
+  async patchPost(
+    @Body() data: Partial<CreatePostDto>,
+    @Req() req: IncomingMessage,
+  ) {
+    return this.boardService.patchPost(data, req);
+  }
+
   // 게시글 삭제
   @UseGuards(JwtAuthGuard)
   @Delete('post/delete/:id')

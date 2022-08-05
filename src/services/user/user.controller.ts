@@ -44,7 +44,26 @@ export class UsersController {
     return await this.usersService.validate(req);
   }
 
-  // 토큰 유효성 검사
+  // 유저 정보 수정
+  @UseGuards(JwtAuthGuard)
+  @Patch('user/patch')
+  async patchUser(
+    @Body()
+    data: {
+      user_id: string;
+      name: string;
+      nickname: string;
+      academy_id: string;
+      school: string;
+      grade: string;
+      phone: string;
+    },
+    @Req() req: IncomingMessage,
+  ) {
+    return await this.usersService.patchUser(data, req);
+  }
+
+  // 학생 반배정
   @UseGuards(JwtAuthGuard)
   @Patch('user/set/class')
   async setStudentClass(
@@ -81,7 +100,7 @@ export class UsersController {
     return await this.usersService.deleteUserQuiz(uqid, req);
   }
 
-  // 회원정보 모두 불러오기
+  // 학생 회원정보 모두 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('user/student/all')
   async getAllStudentUser(@Req() req: IncomingMessage) {
@@ -128,14 +147,14 @@ export class UsersController {
     return await this.usersService.getWrongList(id, req);
   }
 
-  // 퀴즈 오답 불러오기
+  // 퀴즈 오답엑셀 불러오기
   // @UseGuards(JwtAuthGuard)
   @Get('quiz/wrongList/excel/:id')
   @Header(
     'Content-Type',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   )
-  @Header('Content-Disposition', 'attachment; filename=users.xlsx')
+  @Header('Content-Disposition', 'attachment; filename=wrong.xlsx')
   /**
    *
    * @param {string} param quizLog_id

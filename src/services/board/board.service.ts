@@ -87,6 +87,30 @@ export class BoardService {
     }
   }
 
+  // 게시글 수정
+  async patchPost(data: Partial<PostEntity>, req: IncomingMessage) {
+    try {
+      const createPost = await this.postRepository.findOneBy([
+        {
+          post_id: Number(data.post_id),
+        },
+      ]);
+
+      createPost.board_id = await this.boardRepository.findOneBy([
+        { board_id: Number(data.board_id) },
+      ]);
+
+      createPost.title = data.title;
+      createPost.content = data.content;
+      createPost.thumbnail = data.thumbnail ?? null;
+
+      await this.postRepository.update(Number(createPost.post_id), createPost);
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
   async deletePost(id, req) {
     try {
       const post = await this.postRepository.findOneBy([

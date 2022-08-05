@@ -96,6 +96,53 @@ export class AcademyService {
     }
   }
 
+  // 학원 정보 수정
+  async patchAcademy(reqData: Partial<AcademyEntity>, req: IncomingMessage) {
+    try {
+      const academy = await this.academyRepository.findOneBy([
+        { academy_id: Number(reqData.academy_id) },
+      ]);
+
+      academy.name = reqData.name;
+      academy.address = reqData.address;
+      academy.address_detail = reqData.address_detail;
+      academy.zip = reqData.zip;
+      academy.phone = reqData.phone;
+
+      await this.academyRepository.update(Number(academy.academy_id), academy);
+      return 'success';
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 모든 학원 불러오기
+  async getAcademyAll() {
+    try {
+      const academys = await this.academyRepository.find();
+
+      const userAcademys = await Promise.all(
+        academys.map(async (item) => {
+          const userCount = await this.userRepository
+            .createQueryBuilder('usr')
+            .where('usr.academy_id = :academy_id', {
+              academy_id: Number(item.academy_id),
+            })
+            .getCount();
+
+          return {
+            ...item,
+            userCount: userCount,
+          };
+        }),
+      );
+      return userAcademys;
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
   // 반 생성
   async createClass(
     reqData: Pick<CreateClassDto, 'name'>,
@@ -123,7 +170,7 @@ export class AcademyService {
     }
   }
 
-  // 반 모두 불러오기
+  // 내 반 모두 불러오기
   async getClassAll(req: IncomingMessage) {
     try {
       const userInfo: Payload = await jwt(req.headers.authorization);
@@ -136,6 +183,38 @@ export class AcademyService {
         .getMany();
 
       return classes;
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 특정 반 모두 불러오기
+  async getClassId(id) {
+    try {
+      // const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const classes = await this.classRepository
+        .createQueryBuilder('class')
+        .where('class.academy_id = :academy_id', {
+          academy_id: Number(id),
+        })
+        .getMany();
+
+      const userCountClasses = await Promise.all(
+        classes.map(async (item) => {
+          const userCount = await this.userRepository
+            .createQueryBuilder('usr')
+            .where('usr.class_id = :class_id', { class_id: item.class_id })
+            .getCount();
+
+          return {
+            ...item,
+            userCount: userCount,
+          };
+        }),
+      );
+      return userCountClasses;
     } catch (error) {
       console.log(error);
       throw new HttpException(error, 500);
@@ -193,6 +272,20 @@ export class AcademyService {
     }
   }
 
+  // 내 학원 정보 불러오기
+  async getInfoById(id: string) {
+    try {
+      const academy = await this.academyRepository.findOneBy([
+        {
+          academy_id: Number(id),
+        },
+      ]);
+      return academy;
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
   // 내 학원 학생 모두 불러오기
   async getAllStudent(req: IncomingMessage) {
     try {
@@ -214,6 +307,20 @@ export class AcademyService {
       }));
     } catch (error) {
       console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 특정 학원 학생 불러오기
+  async getStudentId(id: string) {
+    try {
+      const students = this.userRepository
+        .createQueryBuilder('usr')
+        .where('usr.academy_id = :academy_id', { academy_id: Number(id) })
+        .leftJoinAndSelect('usr.class_id', 'class_id')
+        .getMany();
+      return students;
+    } catch (error) {
       throw new HttpException(error, 500);
     }
   }

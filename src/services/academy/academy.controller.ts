@@ -26,6 +26,23 @@ export class AcademyController {
     return await this.academyService.create(reqData, req);
   }
 
+  // 학원 정보 수정
+  @UseGuards(JwtAuthGuard)
+  @Patch('patch')
+  async patchAcademy(
+    @Body() reqData: Partial<CreateAcademyDto>,
+    @Req() req: IncomingMessage,
+  ) {
+    return await this.academyService.patchAcademy(reqData, req);
+  }
+
+  // 모든 학원 불러오기
+  @UseGuards(JwtAuthGuard)
+  @Get('/all')
+  async getAcademyAll() {
+    return await this.academyService.getAcademyAll();
+  }
+
   // 반 생성
   @UseGuards(JwtAuthGuard)
   @Post('class/create')
@@ -39,11 +56,18 @@ export class AcademyController {
   // 모든 반 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('class/all')
-  async getClassAll(@Req() req: IncomingMessage) {
+  async getClassAll(@Param('id') id, @Req() req: IncomingMessage) {
     return await this.academyService.getClassAll(req);
   }
 
-  // 모든 반 불러오기
+  // 특정 반 불러오기
+  @UseGuards(JwtAuthGuard)
+  @Get('class/all/:id')
+  async getClassId(@Param('id') id) {
+    return await this.academyService.getClassId(id);
+  }
+
+  // 반 삭제하기
   @UseGuards(JwtAuthGuard)
   @Delete('class/delete/:id')
   async removeClass(
@@ -59,10 +83,16 @@ export class AcademyController {
     return await this.academyService.search(str);
   }
 
-  // 학원 정보 불러오기
+  // 내 학원 정보 불러오기
   @Get('info')
   async info(@Req() req: IncomingMessage) {
     return await this.academyService.info(req);
+  }
+
+  // 특정 학원 정보 불러오기
+  @Get('info/:id')
+  async getInfoById(@Param('id') id: string) {
+    return await this.academyService.getInfoById(id);
   }
 
   // 내 학원 학생 모두 불러오기
@@ -70,6 +100,13 @@ export class AcademyController {
   @Get('student/all')
   async getAllStudent(@Req() req: IncomingMessage) {
     return await this.academyService.getAllStudent(req);
+  }
+
+  // 특정 학원 학생 모두 불러오기
+  @UseGuards(JwtAuthGuard)
+  @Get('student/all/:id')
+  async getStudentId(@Param('id') id: string) {
+    return await this.academyService.getStudentId(id);
   }
 
   // 내 학원 학생, 반 모두 불러오기
