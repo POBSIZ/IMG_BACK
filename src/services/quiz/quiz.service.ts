@@ -31,6 +31,7 @@ import { UserQuizEntity } from '../user/entities/userQuiz.entity';
 import { AcademyEntity } from '../academy/entities/academy.entity';
 
 import { IncomingMessage } from 'http';
+import { shuffle } from 'utils';
 
 @Injectable()
 export class QuizsService {
@@ -177,6 +178,7 @@ export class QuizsService {
 
       return quizList;
     } catch (error) {
+      console.log(error);
       throw new HttpException(error, 500);
     }
   }
@@ -249,10 +251,6 @@ export class QuizsService {
           _prob.quiz_id.max_options - 1,
         );
 
-        // while (_randNumArr.indexOf(Number(_prob.word_id.word_id))) {
-        //   _randNumArr = genRandNum([], _words.length, _prob.quiz_id.max_options);
-        // }
-
         const corrWord = await this.wordRepository.findOneBy([
           { word_id: Number(_prob.word_id.word_id) },
         ]);
@@ -289,8 +287,6 @@ export class QuizsService {
           .where('book.book_id = :book_id', { book_id: Number(item.idx) })
           .getMany();
 
-        // console.log(item);
-
         if (item.isScope) {
           Array.from(
             { length: item.scope[1] - item.scope[0] + 1 },
@@ -323,6 +319,7 @@ export class QuizsService {
         }
       });
     } catch (error) {
+      console.log(error);
       throw new HttpException(error, 500);
     }
   }
@@ -367,7 +364,6 @@ export class QuizsService {
               Number(item.userQuiz_id),
               item,
             );
-            // console.log(updateUserQuiz);
           }
 
           return {
@@ -410,12 +406,12 @@ export class QuizsService {
           .where('audio.word_id = :word_id', { word_id: item.word_id.word_id })
           .getOne();
 
-        const optionList = [
+        const optionList = shuffle([
           options[0].word_id.meaning,
           options[1].word_id.meaning,
           options[2].word_id.meaning,
           options[3].word_id.meaning,
-        ].sort(() => Math.random() - 0.5);
+        ]);
 
         return {
           prob_id: item.prob_id,
@@ -428,11 +424,13 @@ export class QuizsService {
       }),
     );
 
+    const shuffleProbList = shuffle(probList);
+
     const quiz = await this.quizRepository
       .createQueryBuilder('quiz')
       .where('quiz.quiz_id = :quiz_id', { quiz_id: id })
       .getOne();
 
-    return { limitTime: quiz.time, probList: probList };
+    return { limitTime: quiz.time, probList: shuffleProbList };
   }
 }

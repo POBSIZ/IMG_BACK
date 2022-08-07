@@ -28,6 +28,10 @@ export class QuizEntity extends BaseEntity {
   @Column({ type: 'varchar' })
   title: string;
 
+  // 사용 가능 개수
+  @Column({ type: 'integer', nullable: true, default: null })
+  available_counts: number;
+
   // 문제수
   @Column({ type: 'integer' })
   max_words: number;

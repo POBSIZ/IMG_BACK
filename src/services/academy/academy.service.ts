@@ -272,7 +272,7 @@ export class AcademyService {
     }
   }
 
-  // 내 학원 정보 불러오기
+  // 특정 학원 정보 불러오기
   async getInfoById(id: string) {
     try {
       const academy = await this.academyRepository.findOneBy([
@@ -325,12 +325,33 @@ export class AcademyService {
     }
   }
 
-  // 내 학원 반,학생 모두 불러오기
+  // 내 학원 학생 정보 모두 불러오기
   async getAllClassStudent(req: IncomingMessage) {
-    const convertDateToYMDm = (_date) => {
-      const _dateObj = new Date(_date).toISOString();
-      const dateObj = new Date(_dateObj);
-      return `${dateObj.getFullYear()}/${dateObj.getMonth()}/${dateObj.getDay()} ${dateObj.getHours()}:${dateObj.getMinutes()}`;
+    const FormatDate = (_date) => {
+      if (_date === undefined) _date = new Date();
+      const _dateObj = new Date(_date);
+
+      const year = _dateObj.getFullYear();
+
+      const month =
+        _dateObj.getMonth() + 1 < 10
+          ? `0${_dateObj.getMonth() + 1}`
+          : _dateObj.getMonth() + 1;
+
+      const date =
+        _dateObj.getDate() < 10 ? `0${_dateObj.getDate()}` : _dateObj.getDate();
+
+      const hour =
+        _dateObj.getHours() < 10
+          ? `0${_dateObj.getHours()}`
+          : _dateObj.getHours();
+
+      const minute =
+        _dateObj.getMinutes() < 10
+          ? `0${_dateObj.getMinutes()}`
+          : _dateObj.getMinutes();
+
+      return `${year}/${month}/${date} ${hour}:${minute}`;
     };
 
     const userInfoGen = async (_users: UserEntity[]) => {
@@ -348,7 +369,7 @@ export class AcademyService {
             list: userQuizs.map((_uq) => ({
               title: `${_uq.quiz_id.title}, ${_uq.best_solve}/${
                 _uq.quiz_id.max_words
-              }, ${convertDateToYMDm(_uq.recent_date)}`,
+              }, ${FormatDate(_uq.recent_date)}`,
               data: { ..._uq },
             })),
           };

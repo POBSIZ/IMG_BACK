@@ -3,6 +3,7 @@ import { UserQuizEntity } from 'src/services/user/entities/userQuiz.entity';
 import { WrongListEntity } from 'src/services/user/entities/wrongList.entity';
 import { WrongEntity } from 'src/services/user/entities/wrong.entity';
 import { QuizLogEntity } from 'src/services/user/entities/quizLog.entity';
+import { SolvedProbEntity } from 'src/services/user/entities/solvedProb.entity';
 
 import { AcademyEntity } from 'src/services/academy/entities/academy.entity';
 import { ClassEntity } from 'src/services/academy/entities/class.entity';
@@ -26,6 +27,7 @@ const EntityArr = [
   { resource: WrongListEntity, options: { parent: { name: '회원퀴즈' } } },
   { resource: WrongEntity, options: { parent: { name: '회원퀴즈' } } },
   { resource: QuizLogEntity, options: { parent: { name: '회원퀴즈' } } },
+  { resource: SolvedProbEntity, options: { parent: { name: '회원퀴즈' } } },
 
   { resource: AcademyEntity, options: { parent: { name: '학원' } } },
   { resource: ClassEntity, options: { parent: { name: '학원' } } },

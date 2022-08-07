@@ -109,7 +109,7 @@ export class AcademyController {
     return await this.academyService.getStudentId(id);
   }
 
-  // 내 학원 학생, 반 모두 불러오기
+  // 내 학원 학생 모든 정보 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('student/info/all')
   async getAllClassStudent(@Req() req: IncomingMessage) {
