@@ -48,7 +48,7 @@ import { BoardModule } from './services/board/board.module';
       signOptions: { expiresIn: '2h' },
     }),
     ServeStaticModule.forRoot({
-      rootPath: __dirname + '/../../static',
+      rootPath: __dirname + '../../static',
     }),
     UserModule,
     AudioModule,
