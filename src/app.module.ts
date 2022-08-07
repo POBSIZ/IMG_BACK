@@ -19,6 +19,8 @@ import { QuizModule } from './services/quiz/quiz.module';
 import { AcademyModule } from './services/academy/academy.module';
 import { BoardModule } from './services/board/board.module';
 
+import { join } from 'path';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,13 +31,13 @@ import { BoardModule } from './services/board/board.module';
       host: 'localhost',
       port: 5432,
 
-      // username: `postgres`,
-      // password: `010911`,
-      // database: `img`,
+      username: `postgres`,
+      password: `010911`,
+      database: `img`,
 
-      username: `imgls`,
-      password: `imgls0629`,
-      database: `imgls`,
+      // username: `imgls`,
+      // password: `imgls0629`,
+      // database: `imgls`,
 
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
@@ -49,7 +51,8 @@ import { BoardModule } from './services/board/board.module';
     }),
     ServeStaticModule.forRoot({
       // rootPath: __dirname + '../../static',
-      rootPath: '../static',
+      // rootPath: __dirname + '../static',
+      rootPath: join(__dirname, '..', 'static'),
     }),
     UserModule,
     AudioModule,
