@@ -31,7 +31,7 @@ import { UserQuizEntity } from '../user/entities/userQuiz.entity';
 import { AcademyEntity } from '../academy/entities/academy.entity';
 
 import { IncomingMessage } from 'http';
-import { shuffle } from 'utils';
+import { shuffle } from '../../utils';
 
 @Injectable()
 export class QuizsService {
