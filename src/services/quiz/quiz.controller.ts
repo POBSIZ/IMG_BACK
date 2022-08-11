@@ -92,8 +92,12 @@ export class QuizsController {
 
   // 문제 불러오기
   @UseGuards(JwtAuthGuard)
-  @Get('prob/:id')
-  async getQuizProbAll(@Param('id') id, @Req() req: IncomingMessage) {
-    return await this.quizsService.getQuizProbAll(id, req);
+  @Get('prob/:id/:uqid')
+  async getQuizProbAll(
+    @Param('id') id,
+    @Param('uqid') uqid,
+    @Req() req: IncomingMessage,
+  ) {
+    return await this.quizsService.getQuizProbAll(id, uqid, req);
   }
 }

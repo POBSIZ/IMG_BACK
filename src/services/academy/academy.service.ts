@@ -415,7 +415,7 @@ export class AcademyService {
         .getMany();
 
       list.push({
-        title: `반 배정안됨 / ${users.length}`,
+        title: `반 배정안됨 / ${users.length}명`,
         data: null,
         list: await userInfoGen(users),
       });

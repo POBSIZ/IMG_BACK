@@ -10,8 +10,8 @@ import {
   JoinColumn,
 } from 'typeorm';
 
-import { UserQuizEntity } from './userQuiz.entity';
 import { ProbEntity } from 'src/services/quiz/entities/prob.entity';
+import { UserQuizEntity } from './userQuiz.entity';
 
 @Entity('SolvedProb')
 export class SolvedProbEntity extends BaseEntity {

@@ -12,6 +12,8 @@ import { OptionEntity } from './entities/option.entity';
 import { WordEntity } from './entities/word.entity';
 import { UserQuizEntity } from '../user/entities/userQuiz.entity';
 
+import { SolvedProbEntity } from '../user/entities/solvedProb.entity';
+
 import { AcademyEntity } from '../academy/entities/academy.entity';
 import { ClassEntity } from '../academy/entities/class.entity';
 
@@ -38,6 +40,7 @@ import { JwtStrategy } from '../user/jwt/jwt.strategy';
       AudioModule,
       AcademyEntity,
       ClassEntity,
+      SolvedProbEntity,
     ]),
     AudioModule,
   ],

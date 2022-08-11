@@ -22,7 +22,7 @@ import { LoginUserDto } from './dto/login-user.dto';
 
 import { UserQuizEntity } from './entities/userQuiz.entity';
 import { CreateUserQuizDto, UpdateUserQuizDto } from './dto/userQuiz.dto';
-import { QuizEntity } from '../quiz/entities/quiz.entity';
+import { QuizEntity, QuizType } from '../quiz/entities/quiz.entity';
 
 import { QuizLogEntity } from './entities/quizLog.entity';
 import { CreateQuizLogDto } from './dto/quizLog.dto';
@@ -48,6 +48,8 @@ import { OptionEntity } from '../quiz/entities/option.entity';
 import { AudioEntity } from '../audio/entities/audio.entity';
 import { Response } from 'express';
 import { WordEntity } from '../quiz/entities/word.entity';
+import { CreateSolvedProbDto } from './dto/solvedProb.dto';
+import { SolvedProbEntity } from './entities/solvedProb.entity';
 
 @Injectable()
 export class UsersService {
@@ -87,6 +89,9 @@ export class UsersService {
 
     @InjectRepository(ClassEntity)
     private readonly classRepository: Repository<ClassEntity>,
+
+    @InjectRepository(SolvedProbEntity)
+    private readonly solvedProbRepository: Repository<SolvedProbEntity>,
 
     private readonly configService: ConfigService,
 
@@ -305,12 +310,12 @@ export class UsersService {
         { user_id: Number(userInfo.user_id) },
       ]);
 
+      // - 유저 퀴즈 업데이트
       const _userQuiz = await this.userQuizRepository
         .createQueryBuilder('userQuiz')
         .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
-        .where('userQuiz.user_id = :user_id', { user_id: Number(user.user_id) })
-        .andWhere('userQuiz.quiz_id = :quiz_id', {
-          quiz_id: Number(data.quiz_id),
+        .where('userQuiz.userQuiz_id = :userQuiz_id', {
+          userQuiz_id: Number(data.userQuiz_id),
         })
         .getOne();
 
@@ -327,6 +332,7 @@ export class UsersService {
         upadateUserQuizDto,
       );
 
+      // - 오답 목록 생성
       const userQuiz = await this.userQuizRepository
         .createQueryBuilder('userQuiz')
         .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
@@ -339,6 +345,36 @@ export class UsersService {
       createWrongListDto.userQuiz_id = userQuiz;
       const wrongList = await this.wrongListRepository.save(createWrongListDto);
 
+      // 푼 문제 생성
+      if (userQuiz.quiz_id.type === QuizType.EX_PREV) {
+        const solvedProbCount = await this.solvedProbRepository
+          .createQueryBuilder('sp')
+          .where('sp.userQuiz_id = :userQuiz_id', {
+            userQuiz_id: userQuiz.userQuiz_id,
+          })
+          .getManyAndCount();
+
+        if (
+          solvedProbCount[1] + userQuiz.quiz_id.available_counts >=
+          userQuiz.quiz_id.max_words
+        ) {
+          solvedProbCount[0].forEach(async (sp) => {
+            await sp.remove();
+          });
+        }
+
+        data.answerList.forEach(async (item) => {
+          const prob = await this.probRepository.findOneBy([
+            { prob_id: Number(item.prob_id) },
+          ]);
+          const createSolvedProbDto = new CreateSolvedProbDto();
+          createSolvedProbDto.userQuiz_id = userQuiz;
+          createSolvedProbDto.prob_id = prob;
+          await this.solvedProbRepository.save(createSolvedProbDto);
+        });
+      }
+
+      // - 오답 문제 생성
       const wrongAnswerList = data.answerList.filter(
         (item) => Number(item.answer[0]) !== Number(item.correctWordId),
       );
@@ -358,6 +394,7 @@ export class UsersService {
         }),
       );
 
+      // 퀴즈 로그 생성
       const createQuizLogDto = new CreateQuizLogDto();
       createQuizLogDto.user_id = user;
       createQuizLogDto.userQuiz_id = userQuiz;
@@ -366,7 +403,6 @@ export class UsersService {
       createQuizLogDto.score = Number(data.best_solve);
       createQuizLogDto.max_words = Number(userQuiz.quiz_id.max_words);
       const quizLog = await this.quizLogRepository.save(createQuizLogDto);
-      // console.log(quizLog);
 
       return 'Success';
     } catch (error) {
@@ -482,7 +518,8 @@ export class UsersService {
                 date: _quizLog.created_at,
                 title: _quizLog.quiz_title,
                 score: _quizLog.score,
-                probCount: _quizLog.max_words,
+                // probCount: _quizLog.max_words,
+                probCount: _userQuiz.quiz_id.available_counts,
               };
             }),
           );

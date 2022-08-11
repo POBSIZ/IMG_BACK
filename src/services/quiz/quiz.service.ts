@@ -31,7 +31,9 @@ import { UserQuizEntity } from '../user/entities/userQuiz.entity';
 import { AcademyEntity } from '../academy/entities/academy.entity';
 
 import { IncomingMessage } from 'http';
-import { shuffle } from '../../utils';
+import { shuffle, randomArr } from '../../utils';
+
+import { SolvedProbEntity } from '../user/entities/solvedProb.entity';
 
 @Injectable()
 export class QuizsService {
@@ -53,6 +55,9 @@ export class QuizsService {
 
     @InjectRepository(ProbEntity)
     private readonly probRepository: Repository<ProbEntity>,
+
+    @InjectRepository(SolvedProbEntity)
+    private readonly solvedProbRepository: Repository<SolvedProbEntity>,
 
     @InjectRepository(OptionEntity)
     private readonly optionRepository: Repository<OptionEntity>,
@@ -195,57 +200,21 @@ export class QuizsService {
       const createQuizDto = new CreateQuizDto();
 
       // 퀴즈 생성
-      let wordCount = 0;
-      data.wordList.forEach((item) => {
-        const count = item.isScope
-          ? Number(item.scope[1] - item.scope[0] + 1)
-          : Number(item.amount);
-        wordCount += count;
-      });
-
+      createQuizDto.type = data.type;
       createQuizDto.title = data.title;
       createQuizDto.time = data.time;
-      createQuizDto.max_words = wordCount;
+      createQuizDto.max_words = data.scope[1] + 1 - data.scope[0];
       createQuizDto.academy_id = academy;
+      createQuizDto.available_counts = data.word_count;
+      createQuizDto.max_options = data.max_options;
       const lastQuiz = await this.quizRepository.save(createQuizDto);
-
-      /**
-       * 중복 없는 난수 배열 생성 함수
-       *
-       * 난수의 범위는 배열의 최대 길이보다 항상 작아야 한다.
-       *
-       * @param {number[]} _arr 빈 배열
-       * @param {number} _randRange 난수 범위 (0 ~ _randRange)
-       * @param {number} _maxArrLen 배열의 최대 길이
-       * @returns {number[]} _arr
-       */
-      const genRandNum = (
-        _arr: number[],
-        _randRange: number,
-        _maxArrLen: number,
-      ): number[] => {
-        if (_randRange < _maxArrLen) {
-          return _arr;
-        }
-        const randNum: number = Math.floor(Math.random() * _randRange);
-        if (_arr.length < _maxArrLen && _arr.indexOf(randNum) < 0) {
-          _arr.push(randNum);
-          return genRandNum(_arr, _randRange, _maxArrLen);
-        } else {
-          if (_arr.length < _maxArrLen) {
-            return genRandNum(_arr, _randRange, _maxArrLen);
-          } else {
-            return _arr;
-          }
-        }
-      };
 
       // 문항 생성 함수
       const saveOptionFunc = async (
         _prob: ProbEntity,
         _words: WordEntity[],
       ) => {
-        const _randNumArr = genRandNum(
+        const _randNumArr = randomArr(
           [],
           _words.length,
           _prob.quiz_id.max_options - 1,
@@ -281,42 +250,13 @@ export class QuizsService {
       };
 
       // 문제 & 문항 생성
-      data.wordList.forEach(async (item) => {
-        const words = await this.wordRepository
-          .createQueryBuilder('book')
-          .where('book.book_id = :book_id', { book_id: Number(item.idx) })
-          .getMany();
+      const words = await this.wordRepository
+        .createQueryBuilder('book')
+        .where('book.book_id = :book_id', { book_id: Number(data.book_id) })
+        .getMany();
 
-        if (item.isScope) {
-          Array.from(
-            { length: item.scope[1] - item.scope[0] + 1 },
-            (_, i) => i + item.scope[0] - 1,
-          ).forEach(async (_scopeNum) => {
-            await saveProbOptionFunc(words[_scopeNum], words);
-            // console.log('스코프: ' + _scopeNum);
-            // console.log('스코프 객체: ' + words[_scopeNum].word_id);
-            // console.log('스코프 === 문제 & 문항 생성 완료');
-            // console.log('================================');
-          });
-        } else if (item.isRandom) {
-          const randNumArr = genRandNum([], words.length, Number(item.amount));
-          // console.log('랜덤 배열: ' + randNumArr);
-          randNumArr.forEach(async (_randNum, i) => {
-            await saveProbOptionFunc(words[_randNum], words);
-            // console.log('랜덤: ' + i);
-            // console.log('랜덤 객체: ' + words[_randNum].word_id);
-            // console.log('랜덤 === 문제 & 문항 생성 완료');
-            // console.log('================================');
-          });
-        } else {
-          words.forEach(async (_word, i) => {
-            await saveProbOptionFunc(_word, words);
-            // console.log('전체: ' + i);
-            // console.log('전체 객체: ' + _word.word_id);
-            // console.log('전체 === 문제 & 문항 생성 완료');
-            // console.log('================================');
-          });
-        }
+      words.forEach(async (_word, i) => {
+        await saveProbOptionFunc(_word, words);
       });
     } catch (error) {
       console.log(error);
@@ -373,7 +313,7 @@ export class QuizsService {
             date: item.recent_date.toUTCString(),
             tryCount: item.try_count,
             solvedCount: item.best_solve,
-            maxCount: item.quiz_id.max_words,
+            maxCount: item.quiz_id.available_counts,
             disabled: item.disabled,
           };
         }),
@@ -386,15 +326,46 @@ export class QuizsService {
   }
 
   // 퀴즈 문제 모두 불러오기
-  async getQuizProbAll(id, req: IncomingMessage) {
+  async getQuizProbAll(id, uqid, req: IncomingMessage) {
+    const quiz = await this.quizRepository
+      .createQueryBuilder('quiz')
+      .where('quiz.quiz_id = :quiz_id', { quiz_id: id })
+      .getOne();
+
     const probs = await this.probRepository
       .createQueryBuilder('prob')
       .where('prob.quiz_id = :quiz_id', { quiz_id: id })
       .leftJoinAndSelect('prob.word_id', 'word_id')
       .getMany();
 
+    const solvedProb = await this.solvedProbRepository
+      .createQueryBuilder('sp')
+      .where('sp.userQuiz_id = :userQuiz_id', { userQuiz_id: Number(uqid) })
+      .leftJoinAndSelect('sp.prob_id', 'prob_id')
+      .getManyAndCount();
+
+    const quizTypeMap = {
+      IN_PREV: async () => {
+        const shuffleProbs = shuffle(probs);
+        return shuffleProbs.slice(0, quiz.available_counts);
+      },
+      EX_PREV: async () => {
+        const spProbIdList = solvedProb[0].map((_sp) => _sp.prob_id.prob_id);
+        const filterProbs = probs.filter(
+          (prb) => !spProbIdList.includes(prb.prob_id),
+        );
+        const shuffleProbs = shuffle(filterProbs);
+        return shuffleProbs.slice(0, quiz.available_counts);
+      },
+      STATIC: async () => {
+        return probs.slice(0, quiz.available_counts);
+      },
+    };
+
+    const makeProbs = await quizTypeMap[quiz.type]();
+
     const probList = await Promise.all(
-      probs.map(async (item) => {
+      makeProbs.map(async (item) => {
         const options = await this.optionRepository
           .createQueryBuilder('option')
           .leftJoinAndSelect('option.word_id', 'word_id')
@@ -425,11 +396,6 @@ export class QuizsService {
     );
 
     const shuffleProbList = shuffle(probList);
-
-    const quiz = await this.quizRepository
-      .createQueryBuilder('quiz')
-      .where('quiz.quiz_id = :quiz_id', { quiz_id: id })
-      .getOne();
 
     return { limitTime: quiz.time, probList: shuffleProbList };
   }

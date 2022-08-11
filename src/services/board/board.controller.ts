@@ -16,7 +16,6 @@ import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { IncomingMessage } from 'http';
 
 import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { JwtAuthGuard } from '../user/jwt/jwt.guard';
 
 import { BoardService } from './board.service';
@@ -78,6 +77,7 @@ export class BoardController {
     return this.boardService.getPost(id);
   }
 
+  // 이미지 업로드
   @Post('upload/image')
   @UseInterceptors(
     FilesInterceptor('files', 10, {

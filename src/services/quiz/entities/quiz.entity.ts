@@ -10,6 +10,12 @@ import {
   JoinColumn,
 } from 'typeorm';
 
+export enum QuizType {
+  IN_PREV = 'IN_PREV',
+  EX_PREV = 'EX_PREV',
+  STATIC = 'STATIC',
+}
+
 @Entity('Quiz')
 export class QuizEntity extends BaseEntity {
   // 퀴즈 ID
@@ -23,6 +29,10 @@ export class QuizEntity extends BaseEntity {
   @JoinColumn({ name: 'academy_id' })
   @Column({ nullable: true })
   academy_id: AcademyEntity;
+
+  // 방식
+  @Column({ type: 'enum', enum: QuizType, default: QuizType.IN_PREV })
+  type: QuizType;
 
   // 퀴즈 제목
   @Column({ type: 'varchar' })

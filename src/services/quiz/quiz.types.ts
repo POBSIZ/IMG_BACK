@@ -1,17 +1,23 @@
+import { QuizType } from './entities/quiz.entity';
+
 export interface BookWordListType {
   idx: number;
   title: string;
   subtitle: number | string;
-  isRandom: boolean;
-  isScope: boolean;
-  amount: number | string;
   scope: [number, number];
+  word_count: number;
+  type: 'IN_PREV' | 'EX_PREV' | 'STATIC';
 }
 
 export interface QuizCreateDataType {
   title: string;
   time: number;
-  wordList: BookWordListType[];
+  // wordList: BookWordListType[];
+  book_id: number;
+  scope: [number, number];
+  word_count: number;
+  type: QuizType;
+  max_options?: number;
 }
 
 export interface ProbItemType {
