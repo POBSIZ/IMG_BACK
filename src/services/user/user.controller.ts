@@ -44,6 +44,18 @@ export class UsersController {
     return await this.usersService.validate(req);
   }
 
+  // 비밀번호 재설정 검사
+  @Post('validate/password')
+  async validatePassword(@Body() data, @Req() req: IncomingMessage) {
+    return await this.usersService.validatePassword(data, req);
+  }
+
+  // 비밀번호 재설정
+  @Patch('change/password')
+  async changePassword(@Body() data, @Req() req: IncomingMessage) {
+    return await this.usersService.changePassword(data, req);
+  }
+
   // 유저 정보 수정
   @UseGuards(JwtAuthGuard)
   @Patch('user/patch')

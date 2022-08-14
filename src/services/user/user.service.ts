@@ -53,6 +53,9 @@ import { SolvedProbEntity } from './entities/solvedProb.entity';
 import { CreateProbLogDto } from './dto/probLog.dto';
 import { ProbLogEntity } from './entities/probLog.entity';
 import { setPayload } from 'src/utils';
+import { Database } from '@adminjs/prisma';
+
+const SALT = 10;
 
 @Injectable()
 export class UsersService {
@@ -132,9 +135,8 @@ export class UsersService {
         // Both
         createUserDto.academy_id = reqData.academy_id;
 
-        const salt = 10;
         // const salt = Number(process.env.BCRYPT_SALT);
-        const password = await bcrypt.hash(reqData.password, salt);
+        const password = await bcrypt.hash(reqData.password, SALT);
         createUserDto.password = password;
 
         await this.userRepository.save(createUserDto);
@@ -210,6 +212,47 @@ export class UsersService {
       return this.jwtService.sign(payload);
     } catch (error) {
       console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 비밀번호 재설정 검사
+  async validatePassword(data: { username: string; phone: string }, req) {
+    try {
+      const user = await this.userRepository
+        .createQueryBuilder('usr')
+        .where('usr.username = :username', { username: data.username })
+        .andWhere('usr.phone = :phone', { phone: data.phone })
+        .getOne();
+
+      if (user) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 비밀번호 재설정
+  async changePassword(
+    data: { username: string; phone: string; password: string },
+    req,
+  ) {
+    try {
+      const user = await this.userRepository
+        .createQueryBuilder('usr')
+        .where('usr.username = :username', { username: data.username })
+        .andWhere('usr.phone = :phone', { phone: data.phone })
+        .getOne();
+
+      const password = await bcrypt.hash(data.password, SALT);
+      user.password = password;
+
+      await this.userRepository.update(Number(user.user_id), user);
+      return true;
+    } catch (error) {
       throw new HttpException(error, 500);
     }
   }
