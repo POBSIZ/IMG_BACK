@@ -100,4 +100,11 @@ export class QuizsController {
   ) {
     return await this.quizsService.getQuizProbAll(id, uqid, req);
   }
+
+  // 퀴즈 다시하기
+  @UseGuards(JwtAuthGuard)
+  @Get('prob/:quizLog_id')
+  async getRetry(@Param('quizLog_id') id, @Req() req: IncomingMessage) {
+    return await this.quizsService.getRetry(id, req);
+  }
 }

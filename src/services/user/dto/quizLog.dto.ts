@@ -28,4 +28,8 @@ export class CreateQuizLogDto {
   // 문항수
   @IsNotEmpty()
   max_words: number;
+
+  // 풀이시간
+  @IsNotEmpty()
+  time: number;
 }

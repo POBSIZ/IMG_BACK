@@ -22,6 +22,13 @@ import { BookEntity } from '../quiz/entities/book.entity';
 import { JwtService } from '@nestjs/jwt';
 import { CreateClassDto } from './dto/class.dto';
 import { UserQuizEntity } from '../user/entities/userQuiz.entity';
+import { setPayload } from 'src/utils';
+import { PageEntity } from './entities/page.entity';
+import { PageBoardEntity } from './entities/pageBoard.entity';
+import { CreatePageDto } from './dto/page.dto';
+import { CreateBoardDto } from '../board/dto/board.dto';
+import { BoardEntity } from '../board/entities/board.entity';
+import { CreatePageBoardDto } from './dto/pageBoard.dto';
 
 @Injectable()
 export class AcademyService {
@@ -44,6 +51,15 @@ export class AcademyService {
     @InjectRepository(UserQuizEntity)
     private readonly userQuizRepository: Repository<UserQuizEntity>,
 
+    @InjectRepository(PageEntity)
+    private readonly pageRepository: Repository<PageEntity>,
+
+    @InjectRepository(PageBoardEntity)
+    private readonly pageBoardRepository: Repository<PageBoardEntity>,
+
+    @InjectRepository(BoardEntity)
+    private readonly boardRepository: Repository<BoardEntity>,
+
     private jwtService: JwtService,
   ) {}
 
@@ -51,12 +67,15 @@ export class AcademyService {
   async create(reqData: CreateAcademyDto, req: IncomingMessage) {
     try {
       const userInfo: Payload = await jwt(req.headers.authorization);
-      const user = await this.userRepository.findOneBy([
-        {
+      const user = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.user_id = :user_id', {
           user_id: Number(userInfo.user_id),
-        },
-      ]);
+        })
+        .leftJoinAndSelect('user.academy_id', 'academy_id')
+        .getOne();
 
+      // - 학원 존재 유무
       const isExist = await this.academyRepository.findOneBy([
         {
           name: reqData.name,
@@ -64,32 +83,148 @@ export class AcademyService {
         },
       ]);
 
-      if (isExist === null) {
-        const createAcademyDto = new CreateAcademyDto();
-        createAcademyDto.name = reqData.name;
-        createAcademyDto.president_name = reqData.president_name;
-        createAcademyDto.phone = reqData.phone;
-        createAcademyDto.address = reqData.address;
-        createAcademyDto.zip = reqData.zip;
-        createAcademyDto.address_detail = reqData.address_detail;
-
-        const lastAcademy = await this.academyRepository.save(createAcademyDto);
-
-        user.academy_admin = true;
-        user.academy_id = lastAcademy;
-        await this.userRepository.update(Number(user.user_id), user);
-
-        const payload: Payload = {
-          ...user,
-          class_id: user?.class_id?.class_id,
-          academy_id: user?.academy_id?.academy_id,
-          isValidate: true,
-        };
-
-        return this.jwtService.sign(payload);
-      } else {
+      if (isExist !== null) {
         throw new UnauthorizedException('이미 존재하는 학원입니다.');
       }
+
+      // - 학원생성
+      const createAcademyDto = new CreateAcademyDto();
+      createAcademyDto.name = reqData.name;
+      createAcademyDto.president_name = reqData.president_name;
+      createAcademyDto.phone = reqData.phone;
+      createAcademyDto.address = reqData.address;
+      createAcademyDto.zip = reqData.zip;
+      createAcademyDto.address_detail = reqData.address_detail;
+      const lastAcademy = await this.academyRepository.save(createAcademyDto);
+
+      // - 학원 페이지 생성
+      const createPageDto = new CreatePageDto();
+      createPageDto.academy_id = lastAcademy;
+      createPageDto.title = reqData.name;
+      createPageDto.banner = '';
+      createPageDto.bg = '#fff';
+      createPageDto.template = 'default';
+      const lastPage = await this.pageRepository.save(createPageDto);
+
+      // -- 공지 게시판 생성
+      const createBoardDtoNotice = new CreateBoardDto();
+      createBoardDtoNotice.title = '공지';
+      createBoardDtoNotice.desc = `${reqData.name} 공지`;
+      const notice = await this.boardRepository.save(createBoardDtoNotice);
+
+      // -- 소식 게시판 생성
+      const createBoardDtoMessage = new CreateBoardDto();
+      createBoardDtoMessage.title = '소식';
+      createBoardDtoMessage.desc = `${reqData.name} 소식`;
+      const message = await this.boardRepository.save(createBoardDtoMessage);
+
+      // -- 학원 공지 게시판 생성
+      const createPageBoardDtoNotice = new CreatePageBoardDto();
+      createPageBoardDtoNotice.page_id = lastPage;
+      createPageBoardDtoNotice.board_id = notice;
+      await this.pageBoardRepository.save(createPageBoardDtoNotice);
+
+      // -- 학원 소식 게시판 생성
+      const createPageBoardDtoMessage = new CreatePageBoardDto();
+      createPageBoardDtoMessage.page_id = lastPage;
+      createPageBoardDtoMessage.board_id = message;
+      await this.pageBoardRepository.save(createPageBoardDtoMessage);
+
+      // - 원장 학원 정보 주입 업데이트
+      user.academy_admin = true;
+      user.academy_id = lastAcademy;
+      await this.userRepository.update(Number(user.user_id), user);
+
+      // - 업데이트된 유저 정보 전송
+      const payload: Payload = setPayload(user);
+      return this.jwtService.sign(payload);
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 학원 페이지 생성
+  async createPage(academyId: string, req: IncomingMessage) {
+    try {
+      const academy = await this.academyRepository
+        .createQueryBuilder('aca')
+        .where('aca.name = :name', {
+          name: academyId,
+        })
+        .getOne();
+
+      // - 학원 페이지 생성
+      const createPageDto = new CreatePageDto();
+      createPageDto.academy_id = academy;
+      createPageDto.title = academy.name;
+      createPageDto.banner = '';
+      createPageDto.bg = '#fff';
+      createPageDto.template = 'default';
+      const lastPage = await this.pageRepository.save(createPageDto);
+
+      // -- 공지 게시판 생성
+      const createBoardDtoNotice = new CreateBoardDto();
+      createBoardDtoNotice.title = '공지';
+      createBoardDtoNotice.desc = `${academy.name} 공지`;
+      const notice = await this.boardRepository.save(createBoardDtoNotice);
+
+      // -- 소식 게시판 생성
+      const createBoardDtoMessage = new CreateBoardDto();
+      createBoardDtoMessage.title = '소식';
+      createBoardDtoMessage.desc = `${academy.name} 소식`;
+      const message = await this.boardRepository.save(createBoardDtoMessage);
+
+      // -- 학원 공지 게시판 생성
+      const createPageBoardDtoNotice = new CreatePageBoardDto();
+      createPageBoardDtoNotice.page_id = lastPage;
+      createPageBoardDtoNotice.board_id = notice;
+      await this.pageBoardRepository.save(createPageBoardDtoNotice);
+
+      // -- 학원 소식 게시판 생성
+      const createPageBoardDtoMessage = new CreatePageBoardDto();
+      createPageBoardDtoMessage.page_id = lastPage;
+      createPageBoardDtoMessage.board_id = message;
+      await this.pageBoardRepository.save(createPageBoardDtoMessage);
+
+      const pageBoards = await this.pageBoardRepository
+        .createQueryBuilder('pb')
+        .where('pb.page_id = :page_id', {
+          page_id: lastPage.page_id,
+        })
+        .leftJoinAndSelect('pb.board_id', 'board_id')
+        .getMany();
+
+      const data = { ...lastPage, boards: pageBoards };
+
+      return data;
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 학원 페이지 불러오기
+  async getPage(academyId: string, req: IncomingMessage) {
+    try {
+      const page = await this.pageRepository
+        .createQueryBuilder('page')
+        .leftJoinAndSelect('page.academy_id', 'academy_id')
+        .where('academy_id.name = :name', {
+          name: academyId,
+        })
+        .getOne();
+
+      const pageBoards = await this.pageBoardRepository
+        .createQueryBuilder('pb')
+        .where('pb.page_id = :page_id', {
+          page_id: page.page_id,
+        })
+        .leftJoinAndSelect('pb.board_id', 'board_id')
+        .getMany();
+
+      const data = { ...page, boards: pageBoards };
+
+      return data;
     } catch (error) {
       console.log(error);
       throw new HttpException(error, 500);
@@ -363,15 +498,21 @@ export class AcademyService {
             .leftJoinAndSelect('uq.quiz_id', 'quiz_id')
             .getMany();
 
+          const uqList = userQuizs.map((_uq) => {
+            return _uq.disabled
+              ? null
+              : {
+                  title: `${_uq.quiz_id.title}, ${_uq.best_solve}/${
+                    _uq.quiz_id.available_counts
+                  }, ${FormatDate(_uq.recent_date)}`,
+                  data: { ..._uq },
+                };
+          });
+
           return {
             title: user.name,
             data: { ...user },
-            list: userQuizs.map((_uq) => ({
-              title: `${_uq.quiz_id.title}, ${_uq.best_solve}/${
-                _uq.quiz_id.max_words
-              }, ${FormatDate(_uq.recent_date)}`,
-              data: { ..._uq },
-            })),
+            list: uqList,
           };
         }),
       );

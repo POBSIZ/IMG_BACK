@@ -42,4 +42,6 @@ export interface Payload {
   academy_id: number | bigint | AcademyEntity; // 학원 ID
 
   isValidate: boolean;
+
+  academy_info: AcademyEntity;
 }

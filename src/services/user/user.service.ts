@@ -50,6 +50,9 @@ import { Response } from 'express';
 import { WordEntity } from '../quiz/entities/word.entity';
 import { CreateSolvedProbDto } from './dto/solvedProb.dto';
 import { SolvedProbEntity } from './entities/solvedProb.entity';
+import { CreateProbLogDto } from './dto/probLog.dto';
+import { ProbLogEntity } from './entities/probLog.entity';
+import { setPayload } from 'src/utils';
 
 @Injectable()
 export class UsersService {
@@ -92,6 +95,9 @@ export class UsersService {
 
     @InjectRepository(SolvedProbEntity)
     private readonly solvedProbRepository: Repository<SolvedProbEntity>,
+
+    @InjectRepository(ProbLogEntity)
+    private readonly probLogRepository: Repository<ProbLogEntity>,
 
     private readonly configService: ConfigService,
 
@@ -149,9 +155,11 @@ export class UsersService {
   // 로그인
   async login(reqData: LoginUserDto) {
     try {
-      const user = await this.userRepository.findOneBy([
-        { username: reqData.username },
-      ]);
+      const user = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.username = :username', { username: reqData.username })
+        .getOne();
+      // .leftJoinAndSelect('user.academy_id', 'academy_id')
 
       if (user) {
         const isPasswordMatching = await bcrypt.compare(
@@ -160,13 +168,21 @@ export class UsersService {
         );
 
         if (isPasswordMatching) {
-          const payload: Payload = {
-            ...user,
-            academy_id: user.academy_id,
-            class_id: user.class_id,
-            isValidate: true,
-          };
-          return this.jwtService.sign(payload);
+          if (user.academy_id !== null) {
+            const academy_user = await this.userRepository
+              .createQueryBuilder('user')
+              .where('user.username = :username', {
+                username: reqData.username,
+              })
+              .leftJoinAndSelect('user.academy_id', 'academy_id')
+              .getOne();
+
+            const payload = setPayload(academy_user);
+            return this.jwtService.sign(payload);
+          } else {
+            const payload = setPayload(user);
+            return this.jwtService.sign(payload);
+          }
         } else {
           throw new UnauthorizedException('인증되지 않은 사용자입니다.');
         }
@@ -183,17 +199,14 @@ export class UsersService {
   async validate(req: IncomingMessage) {
     try {
       const userInfo: any = await jwt(req.headers.authorization);
-      const user = await this.userRepository.findOneBy([
-        { user_id: userInfo.user_id },
-      ]);
+      const user = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.user_id = :user_id', { user_id: userInfo.user_id })
+        .leftJoinAndSelect('user.academy_id', 'academy_id')
+        .getOne();
 
-      const payload: Payload = {
-        ...user,
-        academy_id: user.academy_id,
-        class_id: user.class_id,
-        isValidate: true,
-      };
-      // console.log(payload);
+      const payload: Payload = setPayload(user);
+
       return this.jwtService.sign(payload);
     } catch (error) {
       console.log(error);
@@ -321,6 +334,8 @@ export class UsersService {
 
       const upadateUserQuizDto = new UpdateUserQuizDto();
       upadateUserQuizDto.try_count = _userQuiz.try_count + 1;
+
+      // 최고 기록 갱신 시 업데이트
       if (_userQuiz.best_solve > data.best_solve) {
         upadateUserQuizDto.best_solve = _userQuiz.best_solve;
       } else {
@@ -345,35 +360,6 @@ export class UsersService {
       createWrongListDto.userQuiz_id = userQuiz;
       const wrongList = await this.wrongListRepository.save(createWrongListDto);
 
-      // 푼 문제 생성
-      if (userQuiz.quiz_id.type === QuizType.EX_PREV) {
-        const solvedProbCount = await this.solvedProbRepository
-          .createQueryBuilder('sp')
-          .where('sp.userQuiz_id = :userQuiz_id', {
-            userQuiz_id: userQuiz.userQuiz_id,
-          })
-          .getManyAndCount();
-
-        if (
-          solvedProbCount[1] + userQuiz.quiz_id.available_counts >=
-          userQuiz.quiz_id.max_words
-        ) {
-          solvedProbCount[0].forEach(async (sp) => {
-            await sp.remove();
-          });
-        }
-
-        data.answerList.forEach(async (item) => {
-          const prob = await this.probRepository.findOneBy([
-            { prob_id: Number(item.prob_id) },
-          ]);
-          const createSolvedProbDto = new CreateSolvedProbDto();
-          createSolvedProbDto.userQuiz_id = userQuiz;
-          createSolvedProbDto.prob_id = prob;
-          await this.solvedProbRepository.save(createSolvedProbDto);
-        });
-      }
-
       // - 오답 문제 생성
       const wrongAnswerList = data.answerList.filter(
         (item) => Number(item.answer[0]) !== Number(item.correctWordId),
@@ -394,7 +380,7 @@ export class UsersService {
         }),
       );
 
-      // 퀴즈 로그 생성
+      // - 퀴즈 로그 생성
       const createQuizLogDto = new CreateQuizLogDto();
       createQuizLogDto.user_id = user;
       createQuizLogDto.userQuiz_id = userQuiz;
@@ -402,7 +388,52 @@ export class UsersService {
       createQuizLogDto.quiz_title = userQuiz.quiz_id.title;
       createQuizLogDto.score = Number(data.best_solve);
       createQuizLogDto.max_words = Number(userQuiz.quiz_id.max_words);
+      createQuizLogDto.time = Number(userQuiz.quiz_id.time);
       const quizLog = await this.quizLogRepository.save(createQuizLogDto);
+
+      // - 푼 문제 & 문제 로그 생성
+      if (userQuiz.quiz_id.type === QuizType.EX_PREV) {
+        const solvedProbCount = await this.solvedProbRepository
+          .createQueryBuilder('sp')
+          .where('sp.userQuiz_id = :userQuiz_id', {
+            userQuiz_id: userQuiz.userQuiz_id,
+          })
+          .getManyAndCount();
+
+        // -- 문제 목록 보다 푼 문제의 길이가 클 경우 푼 문제 목록 초기화
+        if (
+          solvedProbCount[1] + userQuiz.quiz_id.available_counts >=
+          userQuiz.quiz_id.max_words
+        ) {
+          solvedProbCount[0].forEach(async (sp) => {
+            await sp.remove();
+          });
+        }
+
+        // -- 푼 문제 생성
+        data.answerList.forEach(async (item) => {
+          const prob = await this.probRepository.findOneBy([
+            { prob_id: Number(item.prob_id) },
+          ]);
+
+          const createSolvedProbDto = new CreateSolvedProbDto();
+          createSolvedProbDto.userQuiz_id = userQuiz;
+          createSolvedProbDto.prob_id = prob;
+          await this.solvedProbRepository.save(createSolvedProbDto);
+        });
+      }
+
+      // - 문제 로그 생성
+      data.answerList.forEach(async (item) => {
+        const prob = await this.probRepository.findOneBy([
+          { prob_id: Number(item.prob_id) },
+        ]);
+
+        const createProbLogDto = new CreateProbLogDto();
+        createProbLogDto.quizLog_id = quizLog;
+        createProbLogDto.prob_id = prob;
+        await this.probLogRepository.save(createProbLogDto);
+      });
 
       return 'Success';
     } catch (error) {
@@ -420,7 +451,9 @@ export class UsersService {
         { userQuiz_id: Number(uqid) },
       ]);
 
-      await this.userQuizRepository.remove(userQuiz);
+      userQuiz.disabled = true;
+
+      await this.userQuizRepository.update(Number(uqid), userQuiz);
 
       return 'Success';
     } catch (error) {
@@ -518,7 +551,6 @@ export class UsersService {
                 date: _quizLog.created_at,
                 title: _quizLog.quiz_title,
                 score: _quizLog.score,
-                // probCount: _quizLog.max_words,
                 probCount: _userQuiz.quiz_id.available_counts,
               };
             }),
@@ -532,22 +564,32 @@ export class UsersService {
         .andWhere('ql.userQuiz_id IS NULL')
         .getMany();
 
-      noneUqLogs.forEach((item) => {
-        data.push([
-          {
+      const noneUqLogList = await Promise.all(
+        noneUqLogs.map(async (item) => {
+          const probCount = await this.probLogRepository
+            .createQueryBuilder('pl')
+            .where('pl.quizLog_id = :quizLog_id', {
+              quizLog_id: Number(item.quizLog_id),
+            })
+            .getCount();
+
+          return {
             quiz_id: NaN,
             quizLog_id: item.quizLog_id,
             userQuiz_id: NaN,
             date: item.created_at,
             title: item.quiz_title,
             score: item.score,
-            probCount: item.max_words,
-          },
-        ]);
-      });
+            probCount: probCount,
+          };
+        }),
+      );
+
+      data.push(noneUqLogList);
 
       return data;
     } catch (error) {
+      console.log(error);
       throw new HttpException(error, 500);
     }
   }
@@ -620,70 +662,81 @@ export class UsersService {
       const wrongs = await this.wrongRepository
         .createQueryBuilder('wrong')
         .where('wrong.wrongList_id = :wrongList_id', {
-          wrongList_id: quizLog.wrongList_id.wrongList_id,
+          wrongList_id: Number(quizLog.wrongList_id.wrongList_id),
         })
         .leftJoinAndSelect('wrong.prob_id', 'prob_id')
         .getMany();
 
+      // - 오답 id 목록 생성
       const worngIdList = await Promise.all(
         wrongs.map((item) => item.prob_id.prob_id),
       );
 
-      const probs = await this.probRepository
-        .createQueryBuilder('prob')
-        .where('prob.quiz_id = :quiz_id', {
-          quiz_id: quizLog.userQuiz_id.quiz_id.quiz_id,
-        })
-        .leftJoinAndSelect('prob.quiz_id', 'quiz_id')
-        .leftJoinAndSelect('prob.word_id', 'word_id')
+      // - 문제 로그 불러오기
+      const probLogs = await this.probLogRepository
+        .createQueryBuilder('pl')
+        .where('pl.quizLog_id = :quizLog_id', { quizLog_id: Number(id) })
+        .leftJoinAndSelect('pl.prob_id', 'prob_id')
+        .leftJoinAndSelect('prob_id.word_id', 'word_id')
         .getMany();
 
+      // - 결과 리스트 생성
       const list: AnswerListItem[] = await Promise.all(
-        probs.map(async (item, i) => {
-          const isWrong = worngIdList.includes(item.prob_id);
+        probLogs.map(async (_probLog, i) => {
+          // -- 오답 id 목록에 문제가 포함되있는가
+          const isWrong = worngIdList.includes(_probLog.prob_id.prob_id);
+
+          // -- 오답 단어 생성
           const wrongWord = wrongs.filter(
-            (wrong) => Number(wrong.prob_id.prob_id) === Number(item.prob_id),
+            (wrong) =>
+              Number(wrong.prob_id.prob_id) ===
+              Number(_probLog.prob_id.prob_id),
           )[0]?.wrong_word;
 
           const audio = await this.audioRepository
             .createQueryBuilder('audio')
             .where('audio.word_id = :word_id', {
-              word_id: item.word_id.word_id,
+              word_id: _probLog.prob_id.word_id.word_id,
             })
             .getOne();
 
           const options = await this.optionRepository
             .createQueryBuilder('option')
             .where('option.prob_id = :prob_id', {
-              prob_id: Number(item.prob_id),
+              prob_id: Number(_probLog.prob_id.prob_id),
             })
             .leftJoinAndSelect('option.word_id', 'word_id')
             .getMany();
 
+          // -- 문항 뜻만 추출
           const optionList = await Promise.all(
-            options.map((item) => item.word_id.meaning),
+            options.map((_option) => _option.word_id.meaning),
           );
 
+          // -- 사용자가 선택한 답변
           const answer: [number, string] = isWrong
             ? [optionList.indexOf(wrongWord), wrongWord]
-            : [optionList.indexOf(item.word_id.meaning), item.word_id.meaning];
+            : [
+                optionList.indexOf(_probLog.prob_id.word_id.meaning),
+                _probLog.prob_id.word_id.meaning,
+              ];
 
           return {
             id: i,
-            prob_id: Number(item.prob_id),
+            prob_id: Number(_probLog.prob_id),
             answer: answer,
-            correctWordId: optionList.indexOf(item.word_id.meaning),
-            correctWord: item.word_id.word,
+            correctWordId: optionList.indexOf(_probLog.prob_id.word_id.meaning),
+            correctWord: _probLog.prob_id.word_id.word,
             options: optionList,
-            diacritic: item.word_id.diacritic,
+            diacritic: _probLog.prob_id.word_id.diacritic,
             audio: audio.url,
           };
         }),
       );
 
       const data: QuizResultType = {
-        id: Number(quizLog.userQuiz_id.quiz_id.quiz_id),
-        title: quizLog.userQuiz_id.quiz_id.title,
+        id: Number(quizLog.quizLog_id),
+        title: quizLog.quiz_title,
         list: list,
         corrCount: quizLog.score,
       };
@@ -715,11 +768,6 @@ export class UsersService {
 
       const wordList = await Promise.all(
         wrongs.map(async (item) => {
-          // const word = await this.wordRepository
-          //   .createQueryBuilder('word')
-          //   .where('word.word_id = :word_id', {
-          //     word_id: item.prob_id.word_id.word_id,
-          //   });.prob_id.word_id
           return {
             단어: item.prob_id.word_id.word,
             발음: item.prob_id.word_id.diacritic,
@@ -728,19 +776,14 @@ export class UsersService {
           };
         }),
       );
-      // step 1. workbook 생성
+
+      // 엑셀 생성
       const wb = XLSX.utils.book_new();
-
-      // step 2. 시트 만들기
       const newWorksheet = XLSX.utils.json_to_sheet(wordList);
-
-      // step 3. workbook에 새로만든 워크시트에 이름을 주고 붙인다.
       XLSX.utils.book_append_sheet(wb, newWorksheet, '');
-
-      // step 4. 파일을 생성한다. (메모리에만 저장)
       const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
 
-      // step 5. 파일을 response 한다.
+      // 엑셀 전송
       res.end(Buffer.from(wbout, 'base64'));
     } catch (error) {
       throw new HttpException(error, 500);
@@ -767,7 +810,7 @@ export class UsersService {
     }
   }
 
-  // 연결 ID 요청 승인/거절
+  // 연결 ID 요청 승인 | 거절
   async responseChain(
     data: { target: string; status: boolean },
     req: IncomingMessage,

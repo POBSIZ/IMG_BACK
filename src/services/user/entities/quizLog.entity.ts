@@ -39,9 +39,7 @@ export class QuizLogEntity extends BaseEntity {
   userQuiz_id: UserQuizEntity;
 
   // 오답목록 ID
-  @ManyToOne((type) => WrongListEntity, (wrongList) => wrongList.wrongList_id, {
-    onDelete: 'SET NULL',
-  })
+  @ManyToOne((type) => WrongListEntity, (wrongList) => wrongList.wrongList_id)
   @JoinColumn({ name: 'wrongList_id' })
   @Column({ nullable: true })
   wrongList_id: WrongListEntity;
@@ -57,6 +55,10 @@ export class QuizLogEntity extends BaseEntity {
   // 문제수
   @Column({ type: 'integer' })
   max_words: number;
+
+  // 풀이시간
+  @Column({ type: 'integer', nullable: true, default: 10 })
+  time: number;
 
   // 생성일
   @Column({

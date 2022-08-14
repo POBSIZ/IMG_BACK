@@ -32,7 +32,7 @@ export class AudiosService {
 
       res.end(response.audioContent);
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       throw new HttpException(error, 500);
     }
   }

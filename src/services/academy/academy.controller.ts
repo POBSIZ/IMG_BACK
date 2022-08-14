@@ -26,6 +26,21 @@ export class AcademyController {
     return await this.academyService.create(reqData, req);
   }
 
+  // 학원 페이지 생성
+  @Post('page/:id')
+  async createPage(
+    @Param('id') academyId: string,
+    @Req() req: IncomingMessage,
+  ) {
+    return await this.academyService.createPage(academyId, req);
+  }
+
+  // 학원 페이지 불러오기
+  @Get('page/:id')
+  async getPage(@Param('id') academyId: string, @Req() req: IncomingMessage) {
+    return await this.academyService.getPage(academyId, req);
+  }
+
   // 학원 정보 수정
   @UseGuards(JwtAuthGuard)
   @Patch('patch')
@@ -123,7 +138,7 @@ export class AcademyController {
     return await this.academyService.getAllQuiz(req);
   }
 
-  // 내 학원 퀴즈 모두 불러오기
+  // 내 학원 책 모두 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('book/all')
   async getAllBook(@Req() req: IncomingMessage) {

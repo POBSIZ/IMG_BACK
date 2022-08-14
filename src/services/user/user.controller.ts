@@ -95,7 +95,7 @@ export class UsersController {
 
   // 유저퀴즈 삭제
   @UseGuards(JwtAuthGuard)
-  @Delete('userQuiz/delete/:id')
+  @Patch('userQuiz/delete/:id')
   async deleteUserQuiz(@Param('id') uqid: string, @Req() req: IncomingMessage) {
     return await this.usersService.deleteUserQuiz(uqid, req);
   }

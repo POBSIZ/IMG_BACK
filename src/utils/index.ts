@@ -1,6 +1,7 @@
 import { shuffle } from './shuffle';
 import { randomArr } from './randomArr';
+import { setPayload } from './setPayload';
 
-const Utils = { shuffle, randomArr };
+const Utils = { shuffle, randomArr, setPayload };
 export default Utils;
-export { shuffle, randomArr };
+export { shuffle, randomArr, setPayload };

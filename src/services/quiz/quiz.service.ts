@@ -34,6 +34,8 @@ import { IncomingMessage } from 'http';
 import { shuffle, randomArr } from '../../utils';
 
 import { SolvedProbEntity } from '../user/entities/solvedProb.entity';
+import { QuizLogEntity } from '../user/entities/quizLog.entity';
+import { ProbLogEntity } from '../user/entities/probLog.entity';
 
 @Injectable()
 export class QuizsService {
@@ -64,6 +66,12 @@ export class QuizsService {
 
     @InjectRepository(AcademyEntity)
     private readonly academyRepository: Repository<AcademyEntity>,
+
+    @InjectRepository(QuizLogEntity)
+    private readonly quizLogRepository: Repository<QuizLogEntity>,
+
+    @InjectRepository(ProbLogEntity)
+    private readonly probLogRepository: Repository<ProbLogEntity>,
   ) {}
 
   // 책 생성
@@ -255,7 +263,8 @@ export class QuizsService {
         .where('book.book_id = :book_id', { book_id: Number(data.book_id) })
         .getMany();
 
-      words.forEach(async (_word, i) => {
+      const sliceWords = words.slice(data.scope[0] - 1, data.scope[1]);
+      sliceWords.forEach(async (_word, i) => {
         await saveProbOptionFunc(_word, words);
       });
     } catch (error) {
@@ -398,5 +407,57 @@ export class QuizsService {
     const shuffleProbList = shuffle(probList);
 
     return { limitTime: quiz.time, probList: shuffleProbList };
+  }
+
+  // 퀴즈 다시하기
+  async getRetry(id, req: IncomingMessage) {
+    const quizLog = await this.quizLogRepository
+      .createQueryBuilder('ql')
+      .where('ql.quizLog_id = :quizLog_id', { quizLog_id: Number(id) })
+      .getOne();
+
+    const probLogs = await this.probLogRepository
+      .createQueryBuilder('pl')
+      .where('pl.quizLog_id = :quizLog_id', { quizLog_id: Number(id) })
+      .leftJoinAndSelect('pl.prob_id', 'prob_id')
+      .leftJoinAndSelect('prob_id.word_id', 'word_id')
+      .getMany();
+
+    const probList = await Promise.all(
+      probLogs.map(async (item) => {
+        const options = await this.optionRepository
+          .createQueryBuilder('option')
+          .leftJoinAndSelect('option.word_id', 'word_id')
+          .where('option.prob_id = :prob_id', { prob_id: item.prob_id.prob_id })
+          .getMany();
+
+        const audio = await this.audioRepository
+          .createQueryBuilder('audio')
+          .where('audio.word_id = :word_id', {
+            word_id: item.prob_id.word_id.word_id,
+          })
+          .getOne();
+
+        const optionList = shuffle([
+          options[0].word_id.meaning,
+          options[1].word_id.meaning,
+          options[2].word_id.meaning,
+          options[3].word_id.meaning,
+        ]);
+
+        return {
+          prob_id: item.prob_id.prob_id,
+          word: item.prob_id.word_id.word,
+          diacritic: item.prob_id.word_id.diacritic,
+          options: optionList,
+          answer: optionList.indexOf(item.prob_id.word_id.meaning),
+          audio: audio.url,
+        };
+      }),
+    );
+
+    const shuffleProbList = shuffle(probList);
+
+    return { limitTime: quizLog.time, probList: shuffleProbList };
   }
 }

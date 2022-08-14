@@ -4,6 +4,7 @@ import { WrongListEntity } from 'src/services/user/entities/wrongList.entity';
 import { WrongEntity } from 'src/services/user/entities/wrong.entity';
 import { QuizLogEntity } from 'src/services/user/entities/quizLog.entity';
 import { SolvedProbEntity } from 'src/services/user/entities/solvedProb.entity';
+import { ProbLogEntity } from 'src/services/user/entities/probLog.entity';
 
 import { AcademyEntity } from 'src/services/academy/entities/academy.entity';
 import { ClassEntity } from 'src/services/academy/entities/class.entity';
@@ -20,6 +21,8 @@ import { BoardEntity } from 'src/services/board/entities/board.entity';
 import { PostEntity } from 'src/services/board/entities/post.entity';
 import { CommentEntity } from 'src/services/board/entities/comment.entity';
 import { ReplyEntity } from 'src/services/board/entities/reply.entity';
+import { PageEntity } from 'src/services/academy/entities/page.entity';
+import { PageBoardEntity } from 'src/services/academy/entities/pageBoard.entity';
 
 const EntityArr = [
   { resource: UserEntity, options: { parent: { name: '회원' } } },
@@ -28,9 +31,12 @@ const EntityArr = [
   { resource: WrongEntity, options: { parent: { name: '회원퀴즈' } } },
   { resource: QuizLogEntity, options: { parent: { name: '회원퀴즈' } } },
   { resource: SolvedProbEntity, options: { parent: { name: '회원퀴즈' } } },
+  { resource: ProbLogEntity, options: { parent: { name: '회원퀴즈' } } },
 
   { resource: AcademyEntity, options: { parent: { name: '학원' } } },
   { resource: ClassEntity, options: { parent: { name: '학원' } } },
+  { resource: PageEntity, options: { parent: { name: '학원' } } },
+  { resource: PageBoardEntity, options: { parent: { name: '학원' } } },
 
   { resource: BookEntity, options: { parent: { name: '퀴즈' } } },
   { resource: QuizEntity, options: { parent: { name: '퀴즈' } } },

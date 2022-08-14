@@ -20,6 +20,8 @@ import { ClassEntity } from '../academy/entities/class.entity';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from '../user/jwt/jwt.strategy';
+import { ProbLogEntity } from '../user/entities/probLog.entity';
+import { QuizLogEntity } from '../user/entities/quizLog.entity';
 
 @Module({
   imports: [
@@ -41,6 +43,8 @@ import { JwtStrategy } from '../user/jwt/jwt.strategy';
       AcademyEntity,
       ClassEntity,
       SolvedProbEntity,
+      ProbLogEntity,
+      QuizLogEntity,
     ]),
     AudioModule,
   ],
