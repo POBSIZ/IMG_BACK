@@ -41,7 +41,7 @@ export class UserQuizEntity extends BaseEntity {
   @Column({ type: 'integer', default: 0 })
   best_solve: number;
 
-  // 최고성적
+  // 활성화 유무
   @Column({ type: 'boolean', default: false })
   disabled: boolean;
 

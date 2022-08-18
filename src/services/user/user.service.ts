@@ -344,10 +344,11 @@ export class UsersService {
         const userQuizs = await this.userQuizRepository
           .createQueryBuilder('uq')
           .where('uq.user_id = :user_id', { user_id: Number(_user_id) })
+          .andWhere('uq.disabled IS false')
           .leftJoinAndSelect('uq.quiz_id', 'quiz_id')
           .getMany();
 
-        const quizList = userQuizs.map((uq) => uq.quiz_id.quiz_id);
+        const quizList = userQuizs.map((uq) => Number(uq.quiz_id.quiz_id));
 
         if (!quizList.includes(Number(data.quiz_id))) {
           const quiz = await this.quizRepository.findOneBy([
@@ -362,6 +363,7 @@ export class UsersService {
         }
       });
     } catch (error) {
+      console.log(error);
       throw new HttpException(error, 500);
     }
   }
