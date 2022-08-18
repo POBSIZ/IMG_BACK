@@ -48,6 +48,7 @@ export class UserQuizEntity extends BaseEntity {
   // 생성일
   @UpdateDateColumn({
     default: () => 'CURRENT_TIMESTAMP',
+    type: 'timestamp with time zone',
   })
   recent_date: Date;
 }

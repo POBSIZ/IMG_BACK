@@ -332,25 +332,34 @@ export class UsersService {
     req: IncomingMessage,
   ) {
     try {
-      data.users.forEach(async (item) => {
+      data.users.forEach(async (_user_id) => {
         const createUserQuizDto = new CreateUserQuizDto();
 
         const user = await this.userRepository.findOneBy([
           {
-            user_id: Number(item),
+            user_id: Number(_user_id),
           },
         ]);
 
-        const quiz = await this.quizRepository.findOneBy([
-          {
-            quiz_id: Number(data.quiz_id),
-          },
-        ]);
+        const userQuizs = await this.userQuizRepository
+          .createQueryBuilder('uq')
+          .where('uq.user_id = :user_id', { user_id: Number(_user_id) })
+          .leftJoinAndSelect('uq.quiz_id', 'quiz_id')
+          .getMany();
 
-        createUserQuizDto.user_id = user;
-        createUserQuizDto.quiz_id = quiz;
+        const quizList = userQuizs.map((uq) => uq.quiz_id.quiz_id);
 
-        await this.userQuizRepository.save(createUserQuizDto);
+        if (!quizList.includes(Number(data.quiz_id))) {
+          const quiz = await this.quizRepository.findOneBy([
+            {
+              quiz_id: Number(data.quiz_id),
+            },
+          ]);
+          createUserQuizDto.user_id = user;
+          createUserQuizDto.quiz_id = quiz;
+
+          await this.userQuizRepository.save(createUserQuizDto);
+        }
       });
     } catch (error) {
       throw new HttpException(error, 500);

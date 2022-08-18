@@ -53,6 +53,7 @@ export class CommentEntity extends BaseEntity {
   // 수정일
   @UpdateDateColumn({
     default: () => 'CURRENT_TIMESTAMP',
+    type: 'timestamp with time zone',
   })
   updated_at: Date;
 

@@ -66,6 +66,7 @@ export class PostEntity extends BaseEntity {
 
   // 수정일
   @UpdateDateColumn({
+    type: 'timestamp with time zone',
     default: () => 'CURRENT_TIMESTAMP',
   })
   updated_at: Date;

@@ -11,7 +11,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './services/user/jwt/jwt.strategy';
 
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 import { UserModule } from './services/user/user.module';
 import { AudioModule } from './services/audio/audio.module';
@@ -31,13 +31,9 @@ import { join } from 'path';
       host: 'localhost',
       port: 5432,
 
-      // username: `postgres`,
-      // password: `010911`,
-      // database: `img`,
-
-      username: `imgls`,
-      password: `imgls0629`,
-      database: `imgls`,
+      username: process.env.NODE_ENV === 'dev' ? `postgres` : `imgls`,
+      password: process.env.NODE_ENV === 'dev' ? `010911` : `imgls0629`,
+      database: process.env.NODE_ENV === 'dev' ? `img` : `imgls`,
 
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,

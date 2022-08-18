@@ -23,6 +23,7 @@ export class ProbEntity extends BaseEntity {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'quiz_id' })
+  @Column({ nullable: true })
   quiz_id: QuizEntity;
 
   // 단어 ID
