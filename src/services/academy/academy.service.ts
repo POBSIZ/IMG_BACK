@@ -615,7 +615,7 @@ export class AcademyService {
         }),
       );
 
-      return list;
+      return list.sort((a, b) => dateSort(a.title, b.title));
     } catch (error) {
       console.log(error);
       throw new HttpException(error, 500);
