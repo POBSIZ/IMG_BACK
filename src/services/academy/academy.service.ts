@@ -22,13 +22,15 @@ import { BookEntity } from '../quiz/entities/book.entity';
 import { JwtService } from '@nestjs/jwt';
 import { CreateClassDto } from './dto/class.dto';
 import { UserQuizEntity } from '../user/entities/userQuiz.entity';
-import { setPayload } from 'src/utils';
+import { dateSort, formatDate, setPayload } from 'src/utils';
 import { PageEntity } from './entities/page.entity';
 import { PageBoardEntity } from './entities/pageBoard.entity';
 import { CreatePageDto } from './dto/page.dto';
 import { CreateBoardDto } from '../board/dto/board.dto';
 import { BoardEntity } from '../board/entities/board.entity';
 import { CreatePageBoardDto } from './dto/pageBoard.dto';
+import { QuizLogEntity } from '../user/entities/quizLog.entity';
+import { ProbLogEntity } from '../user/entities/probLog.entity';
 
 @Injectable()
 export class AcademyService {
@@ -59,6 +61,12 @@ export class AcademyService {
 
     @InjectRepository(BoardEntity)
     private readonly boardRepository: Repository<BoardEntity>,
+
+    @InjectRepository(QuizLogEntity)
+    private readonly quizLogRepository: Repository<QuizLogEntity>,
+
+    @InjectRepository(ProbLogEntity)
+    private readonly probLogRepository: Repository<ProbLogEntity>,
 
     private jwtService: JwtService,
   ) {}
@@ -462,33 +470,6 @@ export class AcademyService {
 
   // 내 학원 학생 정보 모두 불러오기
   async getAllClassStudent(req: IncomingMessage) {
-    const FormatDate = (_date) => {
-      if (_date === undefined) _date = new Date();
-      const _dateObj = new Date(_date);
-
-      const year = _dateObj.getFullYear();
-
-      const month =
-        _dateObj.getMonth() + 1 < 10
-          ? `0${_dateObj.getMonth() + 1}`
-          : _dateObj.getMonth() + 1;
-
-      const date =
-        _dateObj.getDate() < 10 ? `0${_dateObj.getDate()}` : _dateObj.getDate();
-
-      const hour =
-        _dateObj.getHours() < 10
-          ? `0${_dateObj.getHours()}`
-          : _dateObj.getHours();
-
-      const minute =
-        _dateObj.getMinutes() < 10
-          ? `0${_dateObj.getMinutes()}`
-          : _dateObj.getMinutes();
-
-      return `${year}/${month}/${date} ${hour}:${minute}`;
-    };
-
     const userInfoGen = async (_users: UserEntity[]) => {
       return await Promise.all(
         _users.map(async (user) => {
@@ -504,7 +485,7 @@ export class AcademyService {
               : {
                   title: `${_uq.quiz_id.title}, ${_uq.best_solve}/${
                     _uq.quiz_id.available_counts
-                  }, ${FormatDate(_uq.recent_date)}`,
+                  }, ${formatDate(_uq.recent_date, true)}`,
                   data: { ..._uq },
                 };
           });
@@ -560,6 +541,79 @@ export class AcademyService {
         data: null,
         list: await userInfoGen(users),
       });
+
+      return list;
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 내 학원 학생 퀴즈 기록 모두 불러오기 테이블
+  async getAllClassStudentTable(req: IncomingMessage) {
+    const userInfoGen = async (_users: UserEntity[], _date: string) => {
+      return await Promise.all(
+        _users.map(async (user) => {
+          const quizLogs = await this.quizLogRepository
+            .createQueryBuilder('quizLog')
+            .leftJoinAndSelect('quizLog.userQuiz_id', 'userQuiz_id')
+            .leftJoinAndSelect('userQuiz_id.quiz_id', 'quiz_id')
+            .where('quizLog.user_id = :user_id', {
+              user_id: Number(user.user_id),
+            })
+            .getMany();
+
+          const quizLogData = quizLogs
+            .map((_quizLog) => {
+              return {
+                title: _quizLog.quiz_title,
+                data: {
+                  quizLog_id: _quizLog.quizLog_id,
+                  date: _quizLog.created_at,
+                  score: _quizLog.score,
+                  probCount: _quizLog?.userQuiz_id?.quiz_id?.available_counts,
+                },
+              };
+            })
+            .filter((_qld) => formatDate(_qld.data.date, false) === _date)
+            .sort((a, b) => dateSort(a.data.date, b.data.date));
+
+          return {
+            title: user.name,
+            data: {
+              ...user,
+              class_name: user?.class_id?.name ?? '반 배정 안됨',
+            },
+            list: quizLogData,
+          };
+        }),
+      );
+    };
+
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const users = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.academy_id = :academy_id', {
+          academy_id: Number(userInfo.academy_id),
+        })
+        .getMany();
+
+      const quizLogs = await this.quizLogRepository.find();
+
+      const quizDateMap = [
+        ...new Set(quizLogs.map((item) => formatDate(item.created_at, false))),
+      ];
+
+      const list = await Promise.all(
+        quizDateMap.map(async (_qdm) => {
+          return {
+            title: _qdm,
+            list: await userInfoGen(users, _qdm),
+          };
+        }),
+      );
 
       return list;
     } catch (error) {

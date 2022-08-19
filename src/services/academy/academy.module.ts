@@ -16,6 +16,8 @@ import { JwtStrategy } from '../user/jwt/jwt.strategy';
 import { PageEntity } from './entities/page.entity';
 import { PageBoardEntity } from './entities/pageBoard.entity';
 import { BoardEntity } from '../board/entities/board.entity';
+import { QuizLogEntity } from '../user/entities/quizLog.entity';
+import { ProbLogEntity } from '../user/entities/probLog.entity';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { BoardEntity } from '../board/entities/board.entity';
       PageEntity,
       PageBoardEntity,
       BoardEntity,
+      QuizLogEntity,
+      ProbLogEntity,
     ]),
     // session을 사용하지 않을 예정이기 때문에 false
     PassportModule.register({ defaultStrategy: 'jwt', session: false }),

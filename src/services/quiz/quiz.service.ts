@@ -222,11 +222,9 @@ export class QuizsService {
         _prob: ProbEntity,
         _words: WordEntity[],
       ) => {
-        const _randNumArr = randomArr(
-          [],
-          _words.length,
-          _prob.quiz_id.max_options - 1,
-        );
+        const _randNumArr: number[] = shuffle(
+          [...Array(_words.length)].map((_, i) => i),
+        ).slice(0, data.max_options - 1);
 
         const corrWord = await this.wordRepository.findOneBy([
           { word_id: Number(_prob.word_id.word_id) },
@@ -249,9 +247,10 @@ export class QuizsService {
       const saveProbOptionFunc = async (
         _word: WordEntity,
         _orgnWords: WordEntity[],
+        _lastQuiz: typeof lastQuiz,
       ) => {
         const createProbDto = new CreateProbDto();
-        createProbDto.quiz_id = lastQuiz;
+        createProbDto.quiz_id = _lastQuiz;
         createProbDto.word_id = _word;
         const lastProb = await this.probRepository.save(createProbDto);
         await saveOptionFunc(lastProb, _orgnWords);
@@ -265,7 +264,7 @@ export class QuizsService {
 
       const sliceWords = words.slice(data.scope[0] - 1, data.scope[1]);
       sliceWords.forEach(async (_word, i) => {
-        await saveProbOptionFunc(_word, words);
+        await saveProbOptionFunc(_word, words, lastQuiz);
       });
     } catch (error) {
       console.log(error);
@@ -338,12 +337,12 @@ export class QuizsService {
   async getQuizProbAll(id, uqid, req: IncomingMessage) {
     const quiz = await this.quizRepository
       .createQueryBuilder('quiz')
-      .where('quiz.quiz_id = :quiz_id', { quiz_id: id })
+      .where('quiz.quiz_id = :quiz_id', { quiz_id: Number(id) })
       .getOne();
 
     const probs = await this.probRepository
       .createQueryBuilder('prob')
-      .where('prob.quiz_id = :quiz_id', { quiz_id: id })
+      .where('prob.quiz_id = :quiz_id', { quiz_id: Number(id) })
       .leftJoinAndSelect('prob.word_id', 'word_id')
       .getMany();
 
@@ -377,13 +376,15 @@ export class QuizsService {
       makeProbs.map(async (item) => {
         const options = await this.optionRepository
           .createQueryBuilder('option')
+          .where('option.prob_id = :prob_id', { prob_id: Number(item.prob_id) })
           .leftJoinAndSelect('option.word_id', 'word_id')
-          .where('option.prob_id = :prob_id', { prob_id: item.prob_id })
           .getMany();
 
         const audio = await this.audioRepository
           .createQueryBuilder('audio')
-          .where('audio.word_id = :word_id', { word_id: item.word_id.word_id })
+          .where('audio.word_id = :word_id', {
+            word_id: Number(item.word_id.word_id),
+          })
           .getOne();
 
         const optionList = shuffle([

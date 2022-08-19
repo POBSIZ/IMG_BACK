@@ -131,6 +131,13 @@ export class AcademyController {
     return await this.academyService.getAllClassStudent(req);
   }
 
+  // 내 학원 학생 모든 정보 불러오기 테이블 뷰
+  @UseGuards(JwtAuthGuard)
+  @Get('student/info/all/table')
+  async getAllClassStudentTable(@Req() req: IncomingMessage) {
+    return await this.academyService.getAllClassStudentTable(req);
+  }
+
   // 내 학원 퀴즈 모두 불러오기
   @UseGuards(JwtAuthGuard)
   @Get('quiz/all')

@@ -651,8 +651,6 @@ export class UsersService {
   // 연결 계정 퀴즈 로그 불러오기
   async getChainQuizLog(id: string, req: IncomingMessage) {
     try {
-      const userInfo: any = await jwt(req.headers.authorization);
-
       const userQuizs = await this.userQuizRepository
         .createQueryBuilder('userQuiz')
         .leftJoinAndSelect('userQuiz.user_id', 'user_id')
@@ -681,12 +679,41 @@ export class UsersService {
                 date: _quizLog.created_at,
                 title: _quizLog.quiz_title,
                 score: _quizLog.score,
-                probCount: _quizLog.max_words,
+                probCount: _userQuiz.quiz_id.available_counts,
               };
             }),
           );
         }),
       );
+
+      const noneUqLogs = await this.quizLogRepository
+        .createQueryBuilder('ql')
+        .where('ql.user_id = :user_id', { user_id: Number(id) })
+        .andWhere('ql.userQuiz_id IS NULL')
+        .getMany();
+
+      const noneUqLogList = await Promise.all(
+        noneUqLogs.map(async (item) => {
+          const probCount = await this.probLogRepository
+            .createQueryBuilder('pl')
+            .where('pl.quizLog_id = :quizLog_id', {
+              quizLog_id: Number(item.quizLog_id),
+            })
+            .getCount();
+
+          return {
+            quiz_id: NaN,
+            quizLog_id: item.quizLog_id,
+            userQuiz_id: NaN,
+            date: item.created_at,
+            title: item.quiz_title,
+            score: item.score,
+            probCount: probCount,
+          };
+        }),
+      );
+
+      data.push(noneUqLogList);
 
       return data;
     } catch (error) {
