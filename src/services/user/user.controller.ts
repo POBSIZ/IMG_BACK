@@ -121,9 +121,9 @@ export class UsersController {
 
   // 회원정보 모두 불러오기
   @UseGuards(JwtAuthGuard)
-  @Get('user/all')
-  async getAllUser(@Req() req: IncomingMessage) {
-    return await this.usersService.getAllUser(req);
+  @Get('user/all/:id')
+  async getAllUser(@Param('id') _academy_id, @Req() req: IncomingMessage) {
+    return await this.usersService.getAllUser(_academy_id, req);
   }
 
   // 단일 회원 정보 불러오기

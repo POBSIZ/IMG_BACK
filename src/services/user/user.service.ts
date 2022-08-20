@@ -539,15 +539,31 @@ export class UsersService {
   }
 
   // 회원 정보 모두 가져오기
-  async getAllUser(req: IncomingMessage) {
+  async getAllUser(_academy_id: string, req: IncomingMessage) {
     try {
       const userInfo: Payload = await jwt(req.headers.authorization);
-      if (userInfo.role !== 'admin') {
-        throw new HttpException('관리자가 아닙니다.', 400);
+
+      if (userInfo.academy_admin && _academy_id !== 'null') {
+        const users = await this.userRepository
+          .createQueryBuilder('usr')
+          .where('usr.academy_id = :academy_id', {
+            academy_id: Number(userInfo.academy_id),
+          })
+          .leftJoinAndSelect('usr.academy_id', 'academy_id')
+          .leftJoinAndSelect('usr.class_id', 'class_id')
+          .getMany();
+        return users;
+      } else {
+        const users = await this.userRepository
+          .createQueryBuilder('usr')
+          .leftJoinAndSelect('usr.academy_id', 'academy_id')
+          .leftJoinAndSelect('usr.class_id', 'class_id')
+          .getMany();
+
+        return users;
       }
-      const users = await this.userRepository.find();
-      return users;
     } catch (error) {
+      console.log(error);
       throw new HttpException(error, 500);
     }
   }
@@ -555,18 +571,31 @@ export class UsersService {
   // 단일 회원 정보 가져오기
   async getUserInfo(param, req: IncomingMessage) {
     try {
-      const userInfo: any = await jwt(req.headers.authorization);
-      // if (userInfo.role !== 'admin') {
-      //   throw new HttpException('관리자가 아닙니다.', 400);
-      // }
+      const userInfo: Payload = await jwt(req.headers.authorization);
+      if (userInfo.role !== 'admin') {
+        const user = await this.userRepository
+          .createQueryBuilder('usr')
+          .where('usr.user_id = :user_id', { user_id: Number(param.id) })
+          .leftJoinAndSelect('usr.academy_id', 'academy_id')
+          .getOne();
 
-      const user = await this.userRepository
-        .createQueryBuilder('usr')
-        .where('usr.user_id = :user_id', { user_id: Number(param.id) })
-        .leftJoinAndSelect('usr.academy_id', 'academy_id')
-        .getOne();
+        if (
+          Number(user.academy_id) === Number(userInfo.academy_id) &&
+          userInfo.academy_admin
+        ) {
+          return user;
+        } else {
+          throw new HttpException('관리자가 아닙니다.', 400);
+        }
+      } else {
+        const user = await this.userRepository
+          .createQueryBuilder('usr')
+          .where('usr.user_id = :user_id', { user_id: Number(param.id) })
+          .leftJoinAndSelect('usr.academy_id', 'academy_id')
+          .getOne();
 
-      return user;
+        return user;
+      }
     } catch (error) {
       throw new HttpException(error, 500);
     }
