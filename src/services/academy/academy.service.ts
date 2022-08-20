@@ -581,7 +581,6 @@ export class AcademyService {
           return {
             title: user.name,
             data: {
-              ...user,
               class_name: user?.class_id?.name ?? '반 배정 안됨',
             },
             list: quizLogData,
