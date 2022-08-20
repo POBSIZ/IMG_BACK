@@ -1,6 +1,12 @@
-export const formatDate = (_date: Date | string, _isDetail: boolean) => {
-  if (_date === undefined) _date = new Date();
-  const _dateObj = new Date(_date);
+/**
+ *
+ * @param { Date | string } _data
+ * @param { boolean } _detail default: false
+ * @returns { Date | string }
+ */
+export const formatDate = (_data: Date | string, _detail = false): string => {
+  if (_data === undefined) _data = new Date();
+  const _dateObj = new Date(_data);
 
   const year = _dateObj.getFullYear();
 
@@ -20,7 +26,9 @@ export const formatDate = (_date: Date | string, _isDetail: boolean) => {
       ? `0${_dateObj.getMinutes()}`
       : _dateObj.getMinutes();
 
-  return _isDetail
-    ? `${year}/${month}/${date} ${hour}:${minute}`
-    : `${year}/${month}/${date}`;
+  const fullDate = `${year}/${month}/${date} ${hour}:${minute}`;
+
+  const onlyDate = `${year}/${month}/${date}`;
+
+  return _detail ? fullDate : onlyDate;
 };
