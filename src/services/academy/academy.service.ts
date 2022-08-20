@@ -571,7 +571,7 @@ export class AcademyService {
                   quizLog_id: _quizLog.quizLog_id,
                   date: _quizLog.created_at,
                   score: _quizLog.score,
-                  probCount: _quizLog?.userQuiz_id?.quiz_id?.available_counts,
+                  probCount: _quizLog.userQuiz_id?.quiz_id?.available_counts,
                 },
               };
             })
@@ -581,12 +581,31 @@ export class AcademyService {
           return {
             title: user.name,
             data: {
-              class_name: user?.class_id?.name ?? '반 배정 안됨',
+              class_name: user.class_id?.name ?? '반 배정 안됨',
             },
             list: quizLogData,
           };
         }),
       );
+    };
+
+    const getAcademyDateMap = async (_users: UserEntity[]) => {
+      const _userDates = await Promise.all(
+        _users.flatMap(async (_usr) => {
+          const _quizLogs = await this.quizLogRepository
+            .createQueryBuilder('ql')
+            .where('ql.user_id = :user_id', { user_id: Number(_usr.user_id) })
+            .getMany();
+
+          const _qlDates = _quizLogs.map((_ql) => {
+            return formatDate(_ql.created_at);
+          });
+
+          return [...new Set(_qlDates)];
+        }),
+      );
+
+      return [...new Set(_userDates.flat())];
     };
 
     try {
@@ -597,13 +616,10 @@ export class AcademyService {
         .where('user.academy_id = :academy_id', {
           academy_id: Number(userInfo.academy_id),
         })
+        .leftJoinAndSelect('user.class_id', 'class_id')
         .getMany();
 
-      const quizLogs = await this.quizLogRepository.find();
-
-      const quizDateMap = [
-        ...new Set(quizLogs.map((item) => formatDate(item.created_at, false))),
-      ];
+      const quizDateMap = await getAcademyDateMap(users);
 
       const list = await Promise.all(
         quizDateMap.map(async (_qdm) => {

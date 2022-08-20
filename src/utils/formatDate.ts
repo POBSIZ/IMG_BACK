@@ -1,8 +1,8 @@
 /**
  *
- * @param { Date | string } _data
+ * @param { Date | string } _data Date | string
  * @param { boolean } _detail default: false
- * @returns { Date | string }
+ * @returns { string } string (YYYY-MM-DD) | (YYYY-MM-DD HH:MM:SS)
  */
 export const formatDate = (_data: Date | string, _detail = false): string => {
   if (_data === undefined) _data = new Date();
