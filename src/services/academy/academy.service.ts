@@ -550,7 +550,8 @@ export class AcademyService {
   }
 
   // 내 학원 학생 퀴즈 기록 모두 불러오기 테이블
-  async getAllClassStudentTable(req: IncomingMessage) {
+  async getAllClassStudentTable(id: string | 'null', req: IncomingMessage) {
+    // - 학생 정보 및 퀴즈 로그 리스트 추출 함수
     const userInfoGen = async (_users: UserEntity[], _date: string) => {
       return await Promise.all(
         _users.map(async (user) => {
@@ -563,32 +564,41 @@ export class AcademyService {
             })
             .getMany();
 
-          const quizLogData = quizLogs
-            .map((_quizLog) => {
+          const quizLogData = await Promise.all(
+            quizLogs.map(async (_quizLog) => {
+              const probLogsCount = await this.probLogRepository
+                .createQueryBuilder('pl')
+                .where('pl.quizLog_id = :quizLog_id', {
+                  quizLog_id: Number(_quizLog.quizLog_id),
+                })
+                .getCount();
+
               return {
                 title: _quizLog.quiz_title,
                 data: {
                   quizLog_id: _quizLog.quizLog_id,
                   date: _quizLog.created_at,
                   score: _quizLog.score,
-                  probCount: _quizLog.userQuiz_id?.quiz_id?.available_counts,
+                  probCount: probLogsCount,
                 },
               };
-            })
-            .filter((_qld) => formatDate(_qld.data.date, false) === _date)
-            .sort((a, b) => dateSort(a.data.date, b.data.date));
+            }),
+          );
 
           return {
             title: user.name,
             data: {
               class_name: user.class_id?.name ?? '반 배정 안됨',
             },
-            list: quizLogData,
+            list: quizLogData
+              .filter((_qld) => formatDate(_qld.data.date, false) === _date)
+              .sort((a, b) => dateSort(b.data.date, a.data.date)),
           };
         }),
       );
     };
 
+    //  - 퀴즈 로그 날짜 데이터 맵 추출 함수
     const getAcademyDateMap = async (_users: UserEntity[]) => {
       const _userDates = await Promise.all(
         _users.flatMap(async (_usr) => {
@@ -611,13 +621,24 @@ export class AcademyService {
     try {
       const userInfo: Payload = await jwt(req.headers.authorization);
 
-      const users = await this.userRepository
-        .createQueryBuilder('user')
-        .where('user.academy_id = :academy_id', {
-          academy_id: Number(userInfo.academy_id),
-        })
-        .leftJoinAndSelect('user.class_id', 'class_id')
-        .getMany();
+      const users =
+        id === 'null'
+          ? await this.userRepository
+              .createQueryBuilder('user')
+              .where('user.academy_id = :academy_id', {
+                academy_id: Number(userInfo.academy_id),
+              })
+              .leftJoinAndSelect('user.class_id', 'class_id')
+              .getMany()
+          : [
+              await this.userRepository
+                .createQueryBuilder('user')
+                .where('user.user_id = :user_id', {
+                  user_id: Number(id),
+                })
+                .leftJoinAndSelect('user.class_id', 'class_id')
+                .getOne(),
+            ];
 
       const quizDateMap = await getAcademyDateMap(users);
 
