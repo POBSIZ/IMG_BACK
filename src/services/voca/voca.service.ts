@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 
 import jwt from 'jwt-decode';
 import axios from 'axios';
+import { dateSort } from 'src/utils';
 
 import { WordEntity } from '../quiz/entities/word.entity';
 import { VocaEntity } from './entities/voca.entity';
@@ -131,6 +132,21 @@ export class VocaService {
       });
 
       return 'success';
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
+  async getVocaAll(req: IncomingMessage) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const vocas = await this.vocaRepository
+        .createQueryBuilder('vc')
+        .where('vc.user_id = :user_id', { user_id: Number(userInfo.user_id) })
+        .getMany();
+
+      return vocas.sort((a, b) => dateSort(a.created_at, b.created_at));
     } catch (error) {
       throw new HttpException(error, 500);
     }

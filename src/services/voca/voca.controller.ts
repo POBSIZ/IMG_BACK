@@ -23,12 +23,18 @@ export class VocaController {
     return await this.vocaService.getWordList(data);
   }
 
-  // 단어장 생서
+  // 단어장 생성
   @Post('create')
   async createVoca(
     @Body() data: createVocaBodyType,
     @Req() req: IncomingMessage,
   ) {
     return await this.vocaService.createVoca(data, req);
+  }
+
+  // 단어장 생성
+  @Get('get/all')
+  async getVocaAll(@Req() req: IncomingMessage) {
+    return await this.vocaService.getVocaAll(req);
   }
 }
