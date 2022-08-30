@@ -4,7 +4,6 @@ import { BookEntity } from '../entities/book.entity';
 import { AudioEntity } from 'src/services/audio/entities/audio.entity';
 
 export class CreateWordDto {
-  @IsNotEmpty()
   book_id: BookEntity;
 
   @IsNotEmpty()

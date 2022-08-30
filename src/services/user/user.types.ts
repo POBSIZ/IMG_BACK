@@ -26,6 +26,9 @@ export interface QuizResultType {
 }
 
 export interface UserQuizUpadteData {
+  title: string;
+  time: string;
+  max_words: string;
   userQuiz_id: number | bigint;
   quiz_id: number | bigint;
   best_solve: number;

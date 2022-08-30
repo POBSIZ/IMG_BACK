@@ -390,11 +390,10 @@ export class UsersService {
       upadateUserQuizDto.try_count = _userQuiz.try_count + 1;
 
       // 최고 기록 갱신 시 업데이트
-      if (_userQuiz.best_solve > data.best_solve) {
-        upadateUserQuizDto.best_solve = _userQuiz.best_solve;
-      } else {
-        upadateUserQuizDto.best_solve = Number(data.best_solve);
-      }
+      upadateUserQuizDto.best_solve =
+        _userQuiz.best_solve > data.best_solve
+          ? _userQuiz.best_solve
+          : Number(data.best_solve);
 
       await this.userQuizRepository.update(
         Number(_userQuiz.userQuiz_id),
@@ -419,20 +418,18 @@ export class UsersService {
         (item) => Number(item.answer[0]) !== Number(item.correctWordId),
       );
 
-      await Promise.all(
-        wrongAnswerList.map(async (item) => {
-          const prob = await this.probRepository
-            .createQueryBuilder('prob')
-            .where('prob.prob_id = :prob_id', { prob_id: Number(item.prob_id) })
-            .getOne();
+      wrongAnswerList.forEach(async (item) => {
+        const prob = await this.probRepository
+          .createQueryBuilder('prob')
+          .where('prob.prob_id = :prob_id', { prob_id: Number(item.prob_id) })
+          .getOne();
 
-          const createWrongDto = new CreateWrongDto();
-          createWrongDto.wrongList_id = wrongList;
-          createWrongDto.prob_id = prob;
-          createWrongDto.wrong_word = item.answer[1];
-          return await this.wrongRepository.save(createWrongDto);
-        }),
-      );
+        const createWrongDto = new CreateWrongDto();
+        createWrongDto.wrongList_id = wrongList;
+        createWrongDto.prob_id = prob;
+        createWrongDto.wrong_word = item.answer[1];
+        await this.wrongRepository.save(createWrongDto);
+      });
 
       // - 퀴즈 로그 생성
       const createQuizLogDto = new CreateQuizLogDto();
@@ -596,6 +593,72 @@ export class UsersService {
 
         return user;
       }
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
+  /**
+   *
+   * 단일 회원 정보 가져오기
+   *
+   * @param { UserQuizUpadteData } data
+   * @param { IncomingMessage } req
+   * @returns
+   */
+  async createRetryQuizLog(data: UserQuizUpadteData, req: IncomingMessage) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const user = await this.userRepository.findOneBy([
+        { user_id: Number(userInfo.user_id) },
+      ]);
+
+      // - 오답 목록 생성
+      const createWrongListDto = new CreateWrongListDto();
+      createWrongListDto.userQuiz_id = null;
+      const wrongList = await this.wrongListRepository.save(createWrongListDto);
+
+      // - 오답 문제 생성
+      const wrongAnswerList = data.answerList.filter(
+        (item) => Number(item.answer[0]) !== Number(item.correctWordId),
+      );
+
+      wrongAnswerList.forEach(async (item) => {
+        const prob = await this.probRepository
+          .createQueryBuilder('prob')
+          .where('prob.prob_id = :prob_id', { prob_id: Number(item.prob_id) })
+          .getOne();
+
+        const createWrongDto = new CreateWrongDto();
+        createWrongDto.wrongList_id = wrongList;
+        createWrongDto.prob_id = prob;
+        createWrongDto.wrong_word = item.answer[1];
+        await this.wrongRepository.save(createWrongDto);
+      });
+
+      // - 퀴즈 로그 생성
+      const createQuizLogDto = new CreateQuizLogDto();
+      createQuizLogDto.user_id = user;
+      createQuizLogDto.userQuiz_id = null;
+      createQuizLogDto.wrongList_id = wrongList;
+      createQuizLogDto.quiz_title = data.title;
+      createQuizLogDto.score = Number(data.best_solve);
+      createQuizLogDto.max_words = Number(data.max_words);
+      createQuizLogDto.time = Number(data.time);
+      const quizLog = await this.quizLogRepository.save(createQuizLogDto);
+
+      // - 문제 로그 생성
+      data.answerList.forEach(async (item) => {
+        const prob = await this.probRepository.findOneBy([
+          { prob_id: Number(item.prob_id) },
+        ]);
+
+        const createProbLogDto = new CreateProbLogDto();
+        createProbLogDto.quizLog_id = quizLog;
+        createProbLogDto.prob_id = prob;
+        await this.probLogRepository.save(createProbLogDto);
+      });
     } catch (error) {
       throw new HttpException(error, 500);
     }

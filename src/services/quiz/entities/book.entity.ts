@@ -32,6 +32,10 @@ export class BookEntity extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   desc: string;
 
+  // 활성화
+  @Column({ type: 'boolean', nullable: true, default: false })
+  disabled: boolean;
+
   // 생성일
   @Column({
     type: 'timestamp with time zone',

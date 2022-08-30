@@ -24,6 +24,9 @@ import { ReplyEntity } from 'src/services/board/entities/reply.entity';
 import { PageEntity } from 'src/services/academy/entities/page.entity';
 import { PageBoardEntity } from 'src/services/academy/entities/pageBoard.entity';
 
+import { VocaEntity } from 'src/services/voca/entities/voca.entity';
+import { VocaWordEntity } from 'src/services/voca/entities/vocaWord.entity';
+
 const EntityArr = [
   { resource: UserEntity, options: { parent: { name: '회원' } } },
   { resource: UserQuizEntity, options: { parent: { name: '회원퀴즈' } } },
@@ -50,5 +53,8 @@ const EntityArr = [
   { resource: PostEntity, options: { parent: { name: '게시판' } } },
   { resource: CommentEntity, options: { parent: { name: '게시판' } } },
   { resource: ReplyEntity, options: { parent: { name: '게시판' } } },
+
+  { resource: VocaEntity, options: { parent: { name: '단어장' } } },
+  { resource: VocaWordEntity, options: { parent: { name: '단어장' } } },
 ];
 export default EntityArr;

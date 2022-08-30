@@ -129,6 +129,7 @@ export class QuizsService {
       .where('book.academy_id = :academy_id', {
         academy_id: Number(userInfo.academy_id),
       })
+      .andWhere('book.disabled = :disabled', { disabled: false })
       .getMany();
 
     const bookList = await Promise.all(
@@ -154,15 +155,20 @@ export class QuizsService {
       .createQueryBuilder('book')
       .where('book.book_id = :book_id', { book_id: Number(id) })
       .getOne();
+    book.disabled = true;
 
-    await book.remove();
-    // console.log(`Removed ${book.title}`);
-    return `Removed ${book.title}`;
+    await this.bookRepository.update(Number(book.book_id), book);
+
+    return `Disabled ${book.title}`;
   }
 
   // 책 검색하기
   async searchBook(str: string) {
-    const books = await this.bookRepository.find();
+    const books = await this.bookRepository
+      .createQueryBuilder('book')
+      .where('book.disabled = :disabled', { disabled: false })
+      .getMany();
+
     const srBooks = books.filter((item) => item.title.includes(str));
     return srBooks;
   }
@@ -177,6 +183,7 @@ export class QuizsService {
         .where('quiz.academy_id = :academy_id', {
           academy_id: Number(userInfo.academy_id),
         })
+        .andWhere('quiz.disabled = :disabled', { disabled: false })
         .getMany();
 
       const quizList = await Promise.all(
@@ -279,7 +286,9 @@ export class QuizsService {
         .createQueryBuilder('quiz')
         .where('quiz.quiz_id = :quiz_id', { quiz_id: Number(id) })
         .getOne();
-      await quiz.remove();
+      quiz.disabled = true;
+
+      await this.quizRepository.update(Number(quiz.quiz_id), quiz);
       return `Removed ${quiz.title} Quiz`;
     } catch (error) {
       throw new HttpException(error, 500);
@@ -294,26 +303,12 @@ export class QuizsService {
       const myQuizs = await this.userQuizRepository
         .createQueryBuilder('userQuiz')
         .where('userQuiz.user_id = :user_id', { user_id: userInfo.user_id })
+        .andWhere('userQuiz.disabled = :disabled', { disabled: false })
         .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
         .getMany();
 
       const myQuizList: QuizItemType[] = await Promise.all(
         myQuizs.map(async (item) => {
-          const prob = await this.probRepository
-            .createQueryBuilder('prob')
-            .where('prob.quiz_id = :quiz_id', {
-              quiz_id: Number(item.quiz_id.quiz_id),
-            })
-            .getOne();
-
-          if (!prob) {
-            item.disabled = true;
-            const updateUserQuiz = await this.userQuizRepository.update(
-              Number(item.userQuiz_id),
-              item,
-            );
-          }
-
           return {
             userQuiz_id: Number(item.userQuiz_id),
             quiz_id: Number(item.quiz_id.quiz_id),

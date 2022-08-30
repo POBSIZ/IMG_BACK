@@ -549,7 +549,7 @@ export class AcademyService {
     }
   }
 
-  // 내 학원 학생 퀴즈 기록 모두 불러오기 테이블
+  // 학생 퀴즈 기록 모두 불러오기 테이블
   async getAllClassStudentTable(id: string | 'null', req: IncomingMessage) {
     // - 학생 정보 및 퀴즈 로그 리스트 추출 함수
     const userInfoGen = async (_users: UserEntity[], _date: string) => {
@@ -668,6 +668,7 @@ export class AcademyService {
         .where('quiz.academy_id = :academy_id ', {
           academy_id: Number(userInfo.academy_id),
         })
+        .andWhere('quiz.disabled = :disabled', { disabled: false })
         .getMany();
 
       return quizs;

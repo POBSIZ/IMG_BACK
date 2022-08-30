@@ -25,6 +25,7 @@ export class WrongListEntity extends BaseEntity {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'userQuiz_id' })
+  @Column({ nullable: true, default: null })
   userQuiz_id: UserQuizEntity;
 
   // 생성일

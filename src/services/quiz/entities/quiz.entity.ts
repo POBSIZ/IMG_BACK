@@ -27,7 +27,7 @@ export class QuizEntity extends BaseEntity {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'academy_id' })
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: null })
   academy_id: AcademyEntity;
 
   // 방식
@@ -53,6 +53,10 @@ export class QuizEntity extends BaseEntity {
   // 문항수
   @Column({ type: 'integer', default: 4 })
   max_options: number;
+
+  // 활성화
+  @Column({ type: 'boolean', nullable: true, default: false })
+  disabled: boolean;
 
   // 생성일
   @Column({

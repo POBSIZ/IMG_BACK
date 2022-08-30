@@ -4,6 +4,14 @@
 
 <br/>
 
+# Code
+
+```powershell
+nest g resource [name]
+```
+
+<br/>
+
 # 커밋 컨벤션
 
 - **Feat**: 새로운 기능을 추가할 경우

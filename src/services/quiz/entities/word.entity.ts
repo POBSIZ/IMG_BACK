@@ -21,6 +21,7 @@ export class WordEntity extends BaseEntity {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'book_id' })
+  @Column({ nullable: true, default: null })
   book_id: BookEntity;
 
   @Column({ type: 'varchar' })

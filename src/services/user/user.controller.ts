@@ -20,6 +20,7 @@ import { IncomingMessage } from 'http';
 import { UpdateUserQuizDto, CreateUserQuizDto } from './dto/userQuiz.dto';
 import { UserQuizUpadteData } from './user.types';
 import { Response } from 'express';
+import { data } from 'cheerio/lib/api/attributes';
 
 @Controller('auth')
 export class UsersController {
@@ -131,6 +132,13 @@ export class UsersController {
   @Get('user/:id')
   async getUserInfo(@Param() param, @Req() req: IncomingMessage) {
     return await this.usersService.getUserInfo(param, req);
+  }
+
+  // 퀴즈 재시도 로그 생성
+  @UseGuards(JwtAuthGuard)
+  @Post('userQuiz/retry')
+  async createRetryQuizLog(@Body() data, @Req() req: IncomingMessage) {
+    return await this.usersService.createRetryQuizLog(data, req);
   }
 
   // 퀴즈 로그 불러오기

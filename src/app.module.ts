@@ -18,6 +18,7 @@ import { AudioModule } from './services/audio/audio.module';
 import { QuizModule } from './services/quiz/quiz.module';
 import { AcademyModule } from './services/academy/academy.module';
 import { BoardModule } from './services/board/board.module';
+import { VocaModule } from './services/voca/voca.module';
 
 import { join } from 'path';
 
@@ -46,8 +47,6 @@ import { join } from 'path';
       signOptions: { expiresIn: '2h' },
     }),
     ServeStaticModule.forRoot({
-      // rootPath: __dirname + '../../static',
-      // rootPath: __dirname + '../static',
       rootPath: join(__dirname, '..', 'static'),
     }),
     UserModule,
@@ -56,6 +55,7 @@ import { join } from 'path';
     AdminModule,
     AcademyModule,
     BoardModule,
+    VocaModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],
