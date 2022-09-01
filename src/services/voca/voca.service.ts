@@ -137,6 +137,7 @@ export class VocaService {
     }
   }
 
+  // 단어장 모두 불러오기
   async getVocaAll(req: IncomingMessage) {
     try {
       const userInfo: Payload = await jwt(req.headers.authorization);
@@ -147,6 +148,36 @@ export class VocaService {
         .getMany();
 
       return vocas.sort((a, b) => dateSort(a.created_at, b.created_at));
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 단어장 단어 모두 불러오기
+  async getVocaWords(id: string, req: IncomingMessage) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const voca = await this.vocaRepository
+        .createQueryBuilder('vc')
+        .where('vc.voca_id = :voca_id', { voca_id: Number(id) })
+        .getOne();
+
+      const vocaWords = await this.vocaWordRepository
+        .createQueryBuilder('vw')
+        .where('vw.voca_id = :voca_id', { voca_id: Number(id) })
+        .leftJoinAndSelect('vw.word_id', 'word_id')
+        .getMany();
+
+      const data = {
+        name: voca.name,
+        origin: voca.origin,
+        created_at: voca.created_at,
+        voca_id: voca.voca_id,
+        word_list: vocaWords.sort((a, b) => a.label - b.label),
+      };
+
+      return data;
     } catch (error) {
       throw new HttpException(error, 500);
     }

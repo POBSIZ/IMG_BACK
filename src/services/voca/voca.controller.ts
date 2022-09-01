@@ -37,4 +37,10 @@ export class VocaController {
   async getVocaAll(@Req() req: IncomingMessage) {
     return await this.vocaService.getVocaAll(req);
   }
+
+  // 단어장 단어 목록 불러오기
+  @Get('get/words/:id')
+  async getVocaWords(@Param('id') id, @Req() req: IncomingMessage) {
+    return await this.vocaService.getVocaWords(id, req);
+  }
 }
