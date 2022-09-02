@@ -1,9 +1,11 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Response } from 'express';
 
 import jwt from 'jwt-decode';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 import { dateSort } from 'src/utils';
 
 import { WordEntity } from '../quiz/entities/word.entity';
@@ -179,6 +181,47 @@ export class VocaService {
 
       return data;
     } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 단어장 단어 모두 불러오기
+  async getWordsByExcel(id: string, req: IncomingMessage, res: Response) {
+    try {
+      // const userInfo: Payload = await jwt(req.headers.authorization);
+
+      // const voca = await this.vocaRepository
+      //   .createQueryBuilder('vc')
+      //   .where('vc.voca_id = :voca_id', { voca_id: Number(id) })
+      //   .getOne();
+
+      const vocaWords = await this.vocaWordRepository
+        .createQueryBuilder('vw')
+        .where('vw.voca_id = :voca_id', { voca_id: Number(id) })
+        .leftJoinAndSelect('vw.word_id', 'word_id')
+        .getMany();
+
+      const wordList = await Promise.all(
+        vocaWords.map(async (item) => {
+          return {
+            단어: item.word_id.word,
+            발음: item.word_id.diacritic,
+            주요뜻: item.word_id.meaning,
+            메모: item.word_id.type,
+          };
+        }),
+      );
+
+      // 엑셀 생성
+      const wb = XLSX.utils.book_new();
+      const newWorksheet = XLSX.utils.json_to_sheet(wordList);
+      XLSX.utils.book_append_sheet(wb, newWorksheet, '');
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+
+      // 엑셀 전송
+      res.end(Buffer.from(wbout, 'base64'));
+    } catch (error) {
+      console.log(error);
       throw new HttpException(error, 500);
     }
   }

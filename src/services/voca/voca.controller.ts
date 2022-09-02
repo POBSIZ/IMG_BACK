@@ -7,7 +7,10 @@ import {
   Param,
   Delete,
   Req,
+  Header,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { IncomingMessage } from 'http';
 import { createVocaBodyType } from './types/createVoca';
 import { getWordListDataType } from './types/getWordList';
@@ -42,5 +45,20 @@ export class VocaController {
   @Get('get/words/:id')
   async getVocaWords(@Param('id') id, @Req() req: IncomingMessage) {
     return await this.vocaService.getVocaWords(id, req);
+  }
+
+  // 단어장 엑셀 불러오기
+  @Get('get/words/excel/:id')
+  @Header(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  )
+  @Header('Content-Disposition', 'attachment; filename=voca.xlsx')
+  async getWordsByExcel(
+    @Param('id') id: string,
+    @Req() req: IncomingMessage,
+    @Res() res: Response,
+  ) {
+    return await this.vocaService.getWordsByExcel(id, req, res);
   }
 }
