@@ -22,6 +22,7 @@ import { Payload } from '../user/jwt/jwt.payload';
 import { UserEntity } from '../user/entities/user.entity';
 import { CreateWordDto } from '../quiz/dto/create-word.dto';
 import { CreateVocaWordDto } from './dto/vocaWord.dto';
+import { AddWordsBodyType } from './types/addWords';
 
 @Injectable()
 export class VocaService {
@@ -139,6 +140,54 @@ export class VocaService {
     }
   }
 
+  // 단어장 단어 추가 생성
+  async addWords(data: AddWordsBodyType, req: IncomingMessage) {
+    try {
+      const voca = await this.vocaRepository
+        .createQueryBuilder('vc')
+        .where('vc.voca_id = :voca_id', { voca_id: Number(data.voca_id) })
+        .getOne();
+
+      data.word_list.forEach(async (_wrd) => {
+        const word = await this.wordRepository
+          .createQueryBuilder('wd')
+          .where('wd.word = :word', { word: _wrd.word })
+          .getOne();
+
+        if (word === null) {
+          const createWordDto = new CreateWordDto();
+          createWordDto.word = _wrd.word;
+          createWordDto.diacritic = _wrd.phonetic ?? '';
+          createWordDto.meaning = _wrd.meaning;
+          createWordDto.type = '';
+          const saveWord = await this.wordRepository.save(createWordDto);
+
+          const createVocaWordDto = new CreateVocaWordDto();
+          createVocaWordDto.word_id = saveWord;
+          createVocaWordDto.voca_id = voca;
+          createVocaWordDto.label = Number(_wrd.label[0]);
+          createVocaWordDto.is_out = true;
+          const saveVocaWord = await this.vocaWordRepository.save(
+            createVocaWordDto,
+          );
+        } else {
+          const createVocaWordDto = new CreateVocaWordDto();
+          createVocaWordDto.word_id = word;
+          createVocaWordDto.voca_id = voca;
+          createVocaWordDto.label = Number(_wrd.label[0]);
+          createVocaWordDto.is_out = false;
+          const saveVocaWord = await this.vocaWordRepository.save(
+            createVocaWordDto,
+          );
+        }
+      });
+
+      return 'success';
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
   // 단어장 모두 불러오기
   async getVocaAll(req: IncomingMessage) {
     try {
@@ -222,6 +271,22 @@ export class VocaService {
       res.end(Buffer.from(wbout, 'base64'));
     } catch (error) {
       console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 단어 제거
+  async removeWord(id: string, req: IncomingMessage) {
+    try {
+      await (
+        await this.vocaWordRepository
+          .createQueryBuilder('vw')
+          .where('vw.vocaWord_id = :vocaWord_id', { vocaWord_id: Number(id) })
+          .getOne()
+      ).remove();
+
+      return 'success';
+    } catch (error) {
       throw new HttpException(error, 500);
     }
   }

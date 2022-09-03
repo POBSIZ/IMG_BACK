@@ -58,6 +58,10 @@ export class QuizEntity extends BaseEntity {
   @Column({ type: 'boolean', nullable: true, default: false })
   disabled: boolean;
 
+  // 단어장 퀴즈 유무
+  @Column({ type: 'boolean', nullable: true, default: false })
+  is_voca: boolean;
+
   // 생성일
   @Column({
     type: 'timestamp with time zone',

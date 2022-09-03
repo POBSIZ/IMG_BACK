@@ -1,9 +1,10 @@
 import { IsNotEmpty } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
 import { AcademyEntity } from 'src/services/academy/entities/academy.entity';
 
-import { QuizType } from '../entities/quiz.entity';
+import { QuizEntity, QuizType } from '../entities/quiz.entity';
 
-export class CreateQuizDto {
+export class CreateQuizDto extends PartialType(QuizEntity) {
   // 학원 ID
   @IsNotEmpty()
   academy_id: AcademyEntity;
@@ -28,6 +29,5 @@ export class CreateQuizDto {
   type: QuizType;
 
   // 문항수
-  // @IsNotEmpty()
   max_options: number;
 }

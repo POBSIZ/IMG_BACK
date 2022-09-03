@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { IncomingMessage } from 'http';
+import { AddWordsBodyType } from './types/addWords';
 import { createVocaBodyType } from './types/createVoca';
 import { getWordListDataType } from './types/getWordList';
 import { VocaService } from './voca.service';
@@ -33,6 +34,12 @@ export class VocaController {
     @Req() req: IncomingMessage,
   ) {
     return await this.vocaService.createVoca(data, req);
+  }
+
+  // 단어장 단어 추가 생성
+  @Post('add/words')
+  async addWords(@Body() data: AddWordsBodyType, @Req() req: IncomingMessage) {
+    return await this.vocaService.addWords(data, req);
   }
 
   // 단어장 생성
@@ -60,5 +67,11 @@ export class VocaController {
     @Res() res: Response,
   ) {
     return await this.vocaService.getWordsByExcel(id, req, res);
+  }
+
+  // 단어 제거
+  @Delete('remove/word/:id')
+  async removeWord(@Param('id') id: string, @Req() req: IncomingMessage) {
+    return await this.vocaService.removeWord(id, req);
   }
 }

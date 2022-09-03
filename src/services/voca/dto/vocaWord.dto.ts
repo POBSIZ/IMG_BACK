@@ -13,6 +13,8 @@ export class CreateVocaWordDto {
 
   @IsNotEmpty()
   label: number;
+
+  is_out: boolean;
 }
 
 export class UpdateVocaWordDto extends PartialType(CreateVocaWordDto) {}

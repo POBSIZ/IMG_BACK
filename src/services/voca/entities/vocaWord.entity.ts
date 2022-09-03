@@ -32,4 +32,8 @@ export class VocaWordEntity extends BaseEntity {
   // 라벨
   @Column({ type: 'integer', nullable: true, default: null })
   label: number;
+
+  // 외부 뜻 유무
+  @Column({ type: 'boolean', default: true })
+  is_out: boolean;
 }
