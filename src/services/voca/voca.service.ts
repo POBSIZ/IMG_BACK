@@ -14,7 +14,7 @@ import { VocaWordEntity } from './entities/vocaWord.entity';
 
 import { getWordListDataType } from './types/getWordList';
 
-import { setTranslate } from 'src/api';
+import { getTranslate } from 'src/api';
 import { createVocaBodyType } from './types/createVoca';
 import { CreateVocaDto } from './dto/voca.dto';
 import { IncomingMessage } from 'http';
@@ -43,8 +43,6 @@ export class VocaService {
   // 단어 뜻 찾기
   async getWordList(data: getWordListDataType) {
     try {
-      const translate = setTranslate();
-
       const wl = await Promise.all(
         data.labels.flatMap(async (lb) => {
           const currList = data.word_list.filter((wl) => wl[1] === lb[1]);
@@ -54,7 +52,7 @@ export class VocaService {
                 const wordPhonetic = await axios.get(
                   `https://api.dictionaryapi.dev/api/v2/entries/en/${cl[0]}`,
                 );
-                const meaning = await translate(cl[0]);
+                const meaning = await getTranslate(cl[0]);
 
                 return {
                   word: wordPhonetic.data[0].word,
@@ -62,15 +60,15 @@ export class VocaService {
                     /[\/\[\]]/gi,
                     '',
                   ),
-                  meaning: meaning[0],
+                  meaning: meaning,
                   label: lb,
                 };
               } catch (error) {
-                const meaning = await translate(cl[0]);
+                const meaning = await getTranslate(cl[0]);
                 return {
                   word: cl[0],
                   phonetic: '',
-                  meaning: meaning[0],
+                  meaning: meaning,
                   label: lb,
                 };
               }

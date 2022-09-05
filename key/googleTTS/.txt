@@ -1,2 +1,3 @@
-/home/ubuntu/IMG_BACK/key/googleTTS/img-ls-b8adc0c6bb2d.json
-export GOOGLE_APPLICATION_CREDENTIALS="$HOME/ubuntu/IMG_BACK/key/googleTTS/img-ls-b8adc0c6bb2d.json"
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/ubuntu/IMG_BACK/key/googleTTS/original-aspect-361619-a1358a2da4c3.json"
+
+E:\FOLD\PROJECT\WORK\IMG\IMG_BACK\key\googleTTS\original-aspect-361619-a1358a2da4c3.json

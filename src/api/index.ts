@@ -1,3 +1,3 @@
-import { setTranslate } from './setTranslate';
+import { getTranslate } from './getTranslate';
 
-export { setTranslate };
+export { getTranslate };
