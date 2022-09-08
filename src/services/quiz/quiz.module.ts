@@ -22,6 +22,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from '../user/jwt/jwt.strategy';
 import { ProbLogEntity } from '../user/entities/probLog.entity';
 import { QuizLogEntity } from '../user/entities/quizLog.entity';
+import { VocaEntity } from '../voca/entities/voca.entity';
+import { VocaQuizEntity } from '../voca/entities/vocaQuiz.entity';
 
 @Module({
   imports: [
@@ -45,6 +47,7 @@ import { QuizLogEntity } from '../user/entities/quizLog.entity';
       SolvedProbEntity,
       ProbLogEntity,
       QuizLogEntity,
+      VocaQuizEntity,
     ]),
     AudioModule,
   ],

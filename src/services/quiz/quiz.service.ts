@@ -36,6 +36,7 @@ import { shuffle, randomArr } from '../../utils';
 import { SolvedProbEntity } from '../user/entities/solvedProb.entity';
 import { QuizLogEntity } from '../user/entities/quizLog.entity';
 import { ProbLogEntity } from '../user/entities/probLog.entity';
+import { VocaQuizEntity } from '../voca/entities/vocaQuiz.entity';
 
 @Injectable()
 export class QuizsService {
@@ -72,6 +73,9 @@ export class QuizsService {
 
     @InjectRepository(ProbLogEntity)
     private readonly probLogRepository: Repository<ProbLogEntity>,
+
+    @InjectRepository(VocaQuizEntity)
+    private readonly vocaQuizRepository: Repository<VocaQuizEntity>,
   ) {}
 
   // 책 생성
@@ -309,6 +313,14 @@ export class QuizsService {
 
       const myQuizList: QuizItemType[] = await Promise.all(
         myQuizs.map(async (item) => {
+          const voca = await this.vocaQuizRepository
+            .createQueryBuilder('vq')
+            .where('vq.quiz_id = :quiz_id', {
+              quiz_id: Number(item.quiz_id.quiz_id),
+            })
+            .leftJoinAndSelect('vq.voca_id', 'voca_id')
+            .getOne();
+
           return {
             userQuiz_id: Number(item.userQuiz_id),
             quiz_id: Number(item.quiz_id.quiz_id),
@@ -318,6 +330,8 @@ export class QuizsService {
             solvedCount: item.best_solve,
             maxCount: item.quiz_id.available_counts,
             disabled: item.disabled,
+            is_voca: item.is_voca,
+            voca_id: Number(voca?.voca_id.voca_id),
           };
         }),
       );
@@ -395,7 +409,7 @@ export class QuizsService {
           diacritic: item.word_id.diacritic,
           options: optionList,
           answer: optionList.indexOf(item.word_id.meaning),
-          audio: audio.url,
+          audio: '',
         };
       }),
     );

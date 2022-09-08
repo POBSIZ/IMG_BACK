@@ -37,4 +37,6 @@ export interface QuizItemType {
   solvedCount: number;
   maxCount: number;
   disabled: boolean;
+  is_voca: boolean;
+  voca_id: number;
 }

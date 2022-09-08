@@ -42,7 +42,19 @@ export class VocaController {
     return await this.vocaService.addWords(data, req);
   }
 
-  // 단어장 생성
+  // 단어장 퀴즈 생성
+  @Post('create/quiz/:id')
+  async createQuiz(@Param('id') id: string, @Req() req: IncomingMessage) {
+    return await this.vocaService.createQuiz(id, req);
+  }
+
+  // 단어장 퀴즈 제거
+  @Delete('remove/quiz/:id')
+  async removeQuiz(@Param('id') id: string, @Req() req: IncomingMessage) {
+    return await this.vocaService.removeQuiz(id, req);
+  }
+
+  // 단어장 모두 가져오기
   @Get('get/all')
   async getVocaAll(@Req() req: IncomingMessage) {
     return await this.vocaService.getVocaAll(req);
@@ -73,5 +85,11 @@ export class VocaController {
   @Delete('remove/word/:id')
   async removeWord(@Param('id') id: string, @Req() req: IncomingMessage) {
     return await this.vocaService.removeWord(id, req);
+  }
+
+  // 단어장 합치기
+  @Post('merge')
+  async mergeVoca(@Body() data: string[], @Req() req: IncomingMessage) {
+    return await this.vocaService.mergeVoca(data, req);
   }
 }

@@ -45,6 +45,10 @@ export class UserQuizEntity extends BaseEntity {
   @Column({ type: 'boolean', default: false })
   disabled: boolean;
 
+  // 단어장 퀴즈 유무
+  @Column({ type: 'boolean', default: false })
+  is_voca: boolean;
+
   // 생성일
   @UpdateDateColumn({
     default: () => 'CURRENT_TIMESTAMP',

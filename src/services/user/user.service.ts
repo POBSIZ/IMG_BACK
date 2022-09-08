@@ -341,15 +341,16 @@ export class UsersService {
           },
         ]);
 
-        const userQuizs = await this.userQuizRepository
-          .createQueryBuilder('uq')
-          .where('uq.user_id = :user_id', { user_id: Number(_user_id) })
-          .andWhere('uq.disabled IS false')
-          .leftJoinAndSelect('uq.quiz_id', 'quiz_id')
-          .getMany();
+        const quizList = (
+          await this.userQuizRepository
+            .createQueryBuilder('uq')
+            .where('uq.user_id = :user_id', { user_id: Number(_user_id) })
+            .andWhere('uq.disabled IS false')
+            .leftJoinAndSelect('uq.quiz_id', 'quiz_id')
+            .getMany()
+        ).map((uq) => Number(uq.quiz_id.quiz_id));
 
-        const quizList = userQuizs.map((uq) => Number(uq.quiz_id.quiz_id));
-
+        // 퀴즈 중복 할당 방지
         if (!quizList.includes(Number(data.quiz_id))) {
           const quiz = await this.quizRepository.findOneBy([
             {
@@ -568,31 +569,38 @@ export class UsersService {
   // 단일 회원 정보 가져오기
   async getUserInfo(param, req: IncomingMessage) {
     try {
-      const userInfo: Payload = await jwt(req.headers.authorization);
-      if (userInfo.role !== 'admin') {
-        const user = await this.userRepository
-          .createQueryBuilder('usr')
-          .where('usr.user_id = :user_id', { user_id: Number(param.id) })
-          .leftJoinAndSelect('usr.academy_id', 'academy_id')
-          .getOne();
+      // const userInfo: Payload = await jwt(req.headers.authorization);
+      // if (userInfo.role !== 'admin') {
+      //   const user = await this.userRepository
+      //     .createQueryBuilder('usr')
+      //     .where('usr.user_id = :user_id', { user_id: Number(param.id) })
+      //     .leftJoinAndSelect('usr.academy_id', 'academy_id')
+      //     .getOne();
 
-        if (
-          Number(user.academy_id) === Number(userInfo.academy_id) &&
-          userInfo.academy_admin
-        ) {
-          return user;
-        } else {
-          throw new HttpException('관리자가 아닙니다.', 400);
-        }
-      } else {
-        const user = await this.userRepository
-          .createQueryBuilder('usr')
-          .where('usr.user_id = :user_id', { user_id: Number(param.id) })
-          .leftJoinAndSelect('usr.academy_id', 'academy_id')
-          .getOne();
+      //   if (
+      //     Number(user.academy_id) === Number(userInfo.academy_id) &&
+      //     userInfo.academy_admin
+      //   ) {
+      //     return user;
+      //   } else {
+      //     throw new HttpException('관리자가 아닙니다.', 400);
+      //   }
+      // } else {
+      //   const user = await this.userRepository
+      //     .createQueryBuilder('usr')
+      //     .where('usr.user_id = :user_id', { user_id: Number(param.id) })
+      //     .leftJoinAndSelect('usr.academy_id', 'academy_id')
+      //     .getOne();
 
-        return user;
-      }
+      //   return user;
+      // }
+      const user = await this.userRepository
+        .createQueryBuilder('usr')
+        .where('usr.user_id = :user_id', { user_id: Number(param.id) })
+        .leftJoinAndSelect('usr.academy_id', 'academy_id')
+        .getOne();
+
+      return user;
     } catch (error) {
       throw new HttpException(error, 500);
     }

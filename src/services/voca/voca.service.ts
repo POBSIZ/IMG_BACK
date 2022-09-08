@@ -6,7 +6,7 @@ import { Response } from 'express';
 import jwt from 'jwt-decode';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
-import { dateSort } from 'src/utils';
+import { dateSort, shuffle } from 'src/utils';
 
 import { WordEntity } from '../quiz/entities/word.entity';
 import { VocaEntity } from './entities/voca.entity';
@@ -23,6 +23,16 @@ import { UserEntity } from '../user/entities/user.entity';
 import { CreateWordDto } from '../quiz/dto/create-word.dto';
 import { CreateVocaWordDto } from './dto/vocaWord.dto';
 import { AddWordsBodyType } from './types/addWords';
+import { CreateQuizDto } from '../quiz/dto/create-quiz.dto';
+import { QuizEntity, QuizType } from '../quiz/entities/quiz.entity';
+import { CreateOptionDto } from '../quiz/dto/create-option.dto';
+import { ProbEntity } from '../quiz/entities/prob.entity';
+import { CreateProbDto } from '../quiz/dto/create-prob.dto';
+import { OptionEntity } from '../quiz/entities/option.entity';
+import { CreateUserQuizDto } from '../user/dto/userQuiz.dto';
+import { UserQuizEntity } from '../user/entities/userQuiz.entity';
+import { CreateVocaQuizDto } from './dto/vocaQuiz.dto';
+import { VocaQuizEntity } from './entities/vocaQuiz.entity';
 
 @Injectable()
 export class VocaService {
@@ -36,8 +46,23 @@ export class VocaService {
     @InjectRepository(VocaWordEntity)
     private readonly vocaWordRepository: Repository<VocaWordEntity>,
 
+    @InjectRepository(VocaQuizEntity)
+    private readonly vocaQuizRepository: Repository<VocaQuizEntity>,
+
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+
+    @InjectRepository(QuizEntity)
+    private readonly quizRepository: Repository<QuizEntity>,
+
+    @InjectRepository(ProbEntity)
+    private readonly probRepository: Repository<ProbEntity>,
+
+    @InjectRepository(OptionEntity)
+    private readonly optionRepository: Repository<OptionEntity>,
+
+    @InjectRepository(UserQuizEntity)
+    private readonly userQuizRepository: Repository<UserQuizEntity>,
   ) {}
 
   // 단어 뜻 찾기
@@ -186,6 +211,134 @@ export class VocaService {
     }
   }
 
+  // 단어장 퀴즈 생성
+  async createQuiz(id: string, req: IncomingMessage) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const voca = await this.vocaRepository
+        .createQueryBuilder('vc')
+        .where('vc.voca_id = :voca_id', { voca_id: Number(id) })
+        .getOne();
+
+      const vocaWords = await this.vocaWordRepository
+        .createQueryBuilder('vw')
+        .where('vw.voca_id = :voca_id', { voca_id: Number(id) })
+        .leftJoinAndSelect('vw.word_id', 'word_id')
+        .getManyAndCount();
+
+      // 퀴즈 생성
+      const createQuizDto = new CreateQuizDto();
+      createQuizDto.type =
+        vocaWords[1] >= 30 ? QuizType.EX_PREV : QuizType.IN_PREV;
+      createQuizDto.title = voca.name;
+      createQuizDto.time = 10;
+      createQuizDto.max_words = vocaWords[1];
+      createQuizDto.academy_id = null;
+      createQuizDto.available_counts = vocaWords[1] >= 30 ? 30 : vocaWords[1];
+      createQuizDto.max_options = 4;
+      createQuizDto.is_voca = true;
+      const saveQuiz = await this.quizRepository.save(createQuizDto);
+
+      // 문항 생성 함수
+      const saveOptionFunc = async (
+        _prob: ProbEntity,
+        _words: WordEntity[],
+      ) => {
+        const _randNumArr: number[] = shuffle(
+          [...Array(_words.length)].map((_, i) => i),
+        ).slice(0, 4 - 1);
+
+        const corrWord = await this.wordRepository.findOneBy([
+          { word_id: Number(_prob.word_id.word_id) },
+        ]);
+
+        const createOptionDto = new CreateOptionDto();
+        createOptionDto.prob_id = _prob;
+        createOptionDto.word_id = corrWord;
+        await this.optionRepository.save(createOptionDto);
+
+        _randNumArr.forEach(async (a) => {
+          const createOptionDto = new CreateOptionDto();
+          createOptionDto.prob_id = _prob;
+          createOptionDto.word_id = _words[a];
+          await this.optionRepository.save(createOptionDto);
+        });
+      };
+
+      // 문제 & 문항 생성 함수
+      const saveProbOptionFunc = async (
+        _word: WordEntity,
+        _orgnWords: WordEntity[],
+        _lastQuiz: typeof saveQuiz,
+      ) => {
+        const createProbDto = new CreateProbDto();
+        createProbDto.quiz_id = _lastQuiz;
+        createProbDto.word_id = _word;
+        const lastProb = await this.probRepository.save(createProbDto);
+        await saveOptionFunc(lastProb, _orgnWords);
+      };
+
+      // 문제 & 문항 생성
+      const words = vocaWords[0].map((vw) => vw.word_id);
+
+      words.forEach(async (_word, i) => {
+        await saveProbOptionFunc(_word, words, saveQuiz);
+      });
+
+      // 유저퀴즈 생성
+      const createUserQuizDto = new CreateUserQuizDto();
+
+      const user = await this.userRepository.findOneBy([
+        {
+          user_id: Number(userInfo.user_id),
+        },
+      ]);
+
+      createUserQuizDto.user_id = user;
+      createUserQuizDto.quiz_id = saveQuiz;
+      createUserQuizDto.is_voca = true;
+
+      const saveUserQuiz = await this.userQuizRepository.save(
+        createUserQuizDto,
+      );
+
+      const createVocaQuizDto = new CreateVocaQuizDto();
+      createVocaQuizDto.voca_id = voca;
+      createVocaQuizDto.quiz_id = saveQuiz;
+      createVocaQuizDto.userQuiz_id = saveUserQuiz;
+
+      await this.vocaQuizRepository.save(createVocaQuizDto);
+
+      return 'success';
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
+  async removeQuiz(id: string, req: IncomingMessage) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+      const vocaQuiz = await this.vocaQuizRepository
+        .createQueryBuilder('vq')
+        .where('vq.voca_id = :voca_id', { voca_id: Number(id) })
+        .leftJoinAndSelect('vq.userQuiz_id', 'userQuiz_id')
+        .andWhere('userQuiz_id.disabled = :disabled', { disabled: false })
+        .getOne();
+
+      if (vocaQuiz) {
+        vocaQuiz.userQuiz_id.disabled = true;
+        await this.userQuizRepository.update(
+          Number(vocaQuiz.userQuiz_id.userQuiz_id),
+          vocaQuiz.userQuiz_id,
+        );
+      }
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(error, 500);
+    }
+  }
+
   // 단어장 모두 불러오기
   async getVocaAll(req: IncomingMessage) {
     try {
@@ -218,12 +371,20 @@ export class VocaService {
         .leftJoinAndSelect('vw.word_id', 'word_id')
         .getMany();
 
+      const vocaQuizCount = await this.vocaQuizRepository
+        .createQueryBuilder('vq')
+        .where('vq.voca_id = :voca_id', { voca_id: Number(id) })
+        .leftJoinAndSelect('vq.userQuiz_id', 'userQuiz_id')
+        .andWhere('userQuiz_id.disabled = :disabled', { disabled: false })
+        .getCount();
+
       const data = {
         name: voca.name,
         origin: voca.origin,
         created_at: voca.created_at,
         voca_id: voca.voca_id,
         word_list: vocaWords.sort((a, b) => a.label - b.label),
+        has_quiz: vocaQuizCount > 0,
       };
 
       return data;
@@ -282,6 +443,57 @@ export class VocaService {
           .where('vw.vocaWord_id = :vocaWord_id', { vocaWord_id: Number(id) })
           .getOne()
       ).remove();
+
+      return 'success';
+    } catch (error) {
+      throw new HttpException(error, 500);
+    }
+  }
+
+  // 단어장 합치기
+  async mergeVoca(data: string[], req: IncomingMessage) {
+    try {
+      const userInfo: Payload = await jwt(req.headers.authorization);
+
+      const user = await this.userRepository
+        .createQueryBuilder('usr')
+        .where('usr.user_id = :user_id', { user_id: Number(userInfo.user_id) })
+        .getOne();
+
+      const vocaList = await Promise.all(
+        data.map(async (_vocaId) => {
+          return await this.vocaRepository
+            .createQueryBuilder('vc')
+            .where('vc.voca_id = :voca_id', { voca_id: Number(_vocaId) })
+            .getOne();
+        }),
+      );
+
+      const createVocaDto = new CreateVocaDto();
+      createVocaDto.user_id = user;
+      createVocaDto.name = vocaList.map((vc) => vc.name).join(', ');
+      createVocaDto.origin = '';
+      const voca = await this.vocaRepository.save(createVocaDto);
+
+      data.forEach(async (_vocaId) => {
+        const vocaWords = await this.vocaWordRepository
+          .createQueryBuilder('vw')
+          .where('vw.voca_id = :voca_id', { voca_id: Number(_vocaId) })
+          .leftJoinAndSelect('vw.word_id', 'word_id')
+          .getMany();
+
+        await Promise.all(
+          vocaWords.map(async (vw) => {
+            const createVocaWordDto = new CreateVocaWordDto();
+            createVocaWordDto.word_id = vw.word_id;
+            createVocaWordDto.voca_id = voca;
+            createVocaWordDto.label = vw.label;
+            const saveVocaWord = await this.vocaWordRepository.save(
+              createVocaWordDto,
+            );
+          }),
+        );
+      });
 
       return 'success';
     } catch (error) {

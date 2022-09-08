@@ -26,6 +26,7 @@ import { PageBoardEntity } from 'src/services/academy/entities/pageBoard.entity'
 
 import { VocaEntity } from 'src/services/voca/entities/voca.entity';
 import { VocaWordEntity } from 'src/services/voca/entities/vocaWord.entity';
+import { VocaQuizEntity } from 'src/services/voca/entities/vocaQuiz.entity';
 
 const EntityArr = [
   { resource: UserEntity, options: { parent: { name: '회원' } } },
