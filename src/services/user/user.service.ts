@@ -1,6 +1,7 @@
 import {
   HttpException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 
@@ -59,6 +60,8 @@ const SALT = 10;
 
 @Injectable()
 export class UsersService {
+  private logger = new Logger('UsersService');
+
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
@@ -106,6 +109,21 @@ export class UsersService {
 
     private jwtService: JwtService,
   ) {}
+
+  async remove(id, req: IncomingMessage) {
+    try {
+      const userInfo: any = await jwt(req.headers.authorization);
+      const user = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.user_id = :user_id', { user_id: userInfo.user_id })
+        .getOne();
+
+      this.userRepository.remove(user);
+    } catch (error) {
+      this.logger.error(error);
+      throw new HttpException(error, 500);
+    }
+  }
 
   // 회원가입
   async register(reqData: CreateUserDto) {

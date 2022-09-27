@@ -27,6 +27,12 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   // 회원가입
+  @Delete('remove/:id')
+  async remove(@Param('id') id, @Req() req: IncomingMessage) {
+    return await this.usersService.remove(id, req);
+  }
+
+  // 회원가입
   @Post('register')
   async register(@Body() reqData: CreateUserDto) {
     return await this.usersService.register(reqData);
