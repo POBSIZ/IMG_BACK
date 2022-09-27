@@ -614,22 +614,27 @@ export class AcademyService {
 
     //  - 퀴즈 로그 날짜 데이터 맵 추출 함수
     const getAcademyDateMap = async (_users: UserEntity[]) => {
-      const _userDates = await Promise.all(
-        _users.flatMap(async (_usr) => {
-          const _quizLogs = await this.quizLogRepository
-            .createQueryBuilder('ql')
-            .where('ql.user_id = :user_id', { user_id: Number(_usr.user_id) })
-            .getMany();
+      const _userDates = (
+        await Promise.all(
+          _users.flatMap(async (_usr) => {
+            const _quizLogs = await this.quizLogRepository
+              .createQueryBuilder('ql')
+              .where('ql.user_id = :user_id', { user_id: Number(_usr.user_id) })
+              .andWhere(
+                `ql.created_at BETWEEN (CURRENT_TIMESTAMP - interval '7 day') AND CURRENT_TIMESTAMP`,
+              )
+              .getMany();
 
-          const _qlDates = _quizLogs.map((_ql) => {
-            return formatDate(_ql.created_at);
-          });
+            const _qlDates = _quizLogs.map((_ql) => {
+              return formatDate(_ql.created_at);
+            });
 
-          return [...new Set(_qlDates)];
-        }),
-      );
+            return _qlDates;
+          }),
+        )
+      ).flat();
 
-      return [...new Set(_userDates.flat())];
+      return [...new Set(_userDates)];
     };
 
     try {
