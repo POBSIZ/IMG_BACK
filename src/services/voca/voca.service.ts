@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Response } from 'express';
@@ -36,6 +36,8 @@ import { VocaQuizEntity } from './entities/vocaQuiz.entity';
 
 @Injectable()
 export class VocaService {
+  private logger = new Logger('VocaService');
+
   constructor(
     @InjectRepository(WordEntity)
     private readonly wordRepository: Repository<WordEntity>,
@@ -104,7 +106,7 @@ export class VocaService {
 
       return wl.flat().sort((a, b) => a.label[1] - b.label[1]);
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -131,7 +133,13 @@ export class VocaService {
           .where('wd.word = :word', { word: _wrd.word })
           .getOne();
 
-        if (word === null) {
+        const vocaWord = this.vocaWordRepository
+          .createQueryBuilder('vw')
+          .where('vw.word_id = :word_id', { word_id: word.word_id })
+          .andWhere('vw.is_out = :is_out', { is_out: false })
+          .getOne();
+
+        if (vocaWord === null) {
           const createWordDto = new CreateWordDto();
           createWordDto.word = _wrd.word;
           createWordDto.diacritic = _wrd.phonetic ?? '';
@@ -159,6 +167,7 @@ export class VocaService {
 
       return 'success';
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -207,6 +216,7 @@ export class VocaService {
 
       return 'success';
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -312,10 +322,12 @@ export class VocaService {
 
       return 'success';
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
 
+  // 단어 퀴즈 삭제
   async removeQuiz(id: string, req: IncomingMessage) {
     try {
       const userInfo: Payload = await jwt(req.headers.authorization);
@@ -334,7 +346,7 @@ export class VocaService {
         );
       }
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -351,6 +363,7 @@ export class VocaService {
 
       return vocas.sort((a, b) => dateSort(a.created_at, b.created_at));
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -389,6 +402,7 @@ export class VocaService {
 
       return data;
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -429,7 +443,7 @@ export class VocaService {
       // 엑셀 전송
       res.end(Buffer.from(wbout, 'base64'));
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -446,6 +460,7 @@ export class VocaService {
 
       return 'success';
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -497,6 +512,7 @@ export class VocaService {
 
       return 'success';
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }

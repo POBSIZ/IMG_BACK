@@ -1,6 +1,7 @@
 import {
   HttpException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -34,6 +35,8 @@ import { ProbLogEntity } from '../user/entities/probLog.entity';
 
 @Injectable()
 export class AcademyService {
+  private logger = new Logger('AcademyService');
+
   constructor(
     @InjectRepository(AcademyEntity)
     private readonly academyRepository: Repository<AcademyEntity>,
@@ -234,7 +237,7 @@ export class AcademyService {
 
       return data;
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -255,7 +258,7 @@ export class AcademyService {
       await this.academyRepository.update(Number(academy.academy_id), academy);
       return 'success';
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -282,6 +285,7 @@ export class AcademyService {
       );
       return userAcademys;
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -308,7 +312,7 @@ export class AcademyService {
 
       return 'Success';
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -327,7 +331,7 @@ export class AcademyService {
 
       return classes;
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -359,7 +363,7 @@ export class AcademyService {
       );
       return userCountClasses;
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -380,7 +384,7 @@ export class AcademyService {
       await this.classRepository.remove(selectClass);
       return 'Success';
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -396,6 +400,7 @@ export class AcademyService {
         return srAcademyList;
       }
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -411,6 +416,7 @@ export class AcademyService {
       ]);
       return academy;
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -449,7 +455,7 @@ export class AcademyService {
         class_name: item?.class_id?.name,
       }));
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -464,6 +470,7 @@ export class AcademyService {
         .getMany();
       return students;
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -544,13 +551,17 @@ export class AcademyService {
 
       return list;
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
 
   // 학생 퀴즈 기록 모두 불러오기 테이블
   async getAllClassStudentTable(id: string | 'null', req: IncomingMessage) {
+    const now = new Date();
+    const lastWeek = new Date();
+    lastWeek.setDate(lastWeek.getDate() - lastWeek.getDay() - 5);
+
     // - 학생 정보 및 퀴즈 로그 리스트 추출 함수
     const userInfoGen = async (_users: UserEntity[], _date: string) => {
       return await Promise.all(
@@ -562,6 +573,9 @@ export class AcademyService {
             .where('quizLog.user_id = :user_id', {
               user_id: Number(user.user_id),
             })
+            .andWhere(
+              `quizLog.created_at BETWEEN (CURRENT_TIMESTAMP - interval '7 day') AND CURRENT_TIMESTAMP`,
+            )
             .getMany();
 
           const quizLogData = await Promise.all(
@@ -653,7 +667,7 @@ export class AcademyService {
 
       return list.sort((a, b) => dateSort(a.title, b.title));
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -673,6 +687,7 @@ export class AcademyService {
 
       return quizs;
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -691,6 +706,7 @@ export class AcademyService {
 
       return books;
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
