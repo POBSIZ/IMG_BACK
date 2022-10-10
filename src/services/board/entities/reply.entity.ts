@@ -19,8 +19,8 @@ import { BoardStatus } from './board.entity';
 @Entity('Reply')
 export class ReplyEntity extends BaseEntity {
   // 답변 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  reply_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  reply_id: string;
 
   // 댓글 ID
   @ManyToOne((type) => CommentEntity, (comment) => comment.comment_id, {
@@ -44,7 +44,7 @@ export class ReplyEntity extends BaseEntity {
 
   // 추천수
   @Column({ type: 'bigint', default: 0 })
-  like: number | bigint;
+  like: string;
 
   // 상태
   @Column({ type: 'varchar', enum: BoardStatus, default: BoardStatus.PUBLIC })

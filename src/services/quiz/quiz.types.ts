@@ -29,8 +29,8 @@ export interface ProbItemType {
 }
 
 export interface QuizItemType {
-  userQuiz_id: number;
-  quiz_id: number;
+  userQuiz_id: string;
+  quiz_id: string;
   title: string;
   date: string;
   tryCount: number;
@@ -38,5 +38,5 @@ export interface QuizItemType {
   maxCount: number;
   disabled: boolean;
   is_voca: boolean;
-  voca_id: number;
+  voca_id: string;
 }

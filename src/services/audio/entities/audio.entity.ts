@@ -13,8 +13,8 @@ import {
 @Entity('Audio')
 export class AudioEntity extends BaseEntity {
   // 오디오 ID
-  @PrimaryGeneratedColumn()
-  audio_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  audio_id: string;
 
   // 단어 ID
   @OneToOne((type) => WordEntity, (word) => word.word_id, {

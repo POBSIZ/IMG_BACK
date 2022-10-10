@@ -7,13 +7,14 @@ import {
   BaseEntity,
   OneToOne,
   JoinColumn,
+  ObjectID,
 } from 'typeorm';
 
 @Entity('Academy')
 export class AcademyEntity extends BaseEntity {
   // 학원 ID
-  @PrimaryGeneratedColumn()
-  academy_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  academy_id: string;
 
   // 학원명
   @Column({ type: 'varchar' })

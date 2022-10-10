@@ -17,23 +17,23 @@ import { BoardEntity, BoardStatus } from './board.entity';
 @Entity('Post')
 export class PostEntity extends BaseEntity {
   // 게시글 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  post_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  post_id: string;
 
   // 게시판 ID
   @ManyToOne((type) => BoardEntity, (board) => board.board_id, {
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'board_id' })
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   board_id: BoardEntity;
 
   // 작성자 ID
   @ManyToOne((type) => UserEntity, (user) => user.user_id, {
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'user_id' })
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   user_id: UserEntity;
 
   // 썸네일
@@ -54,7 +54,7 @@ export class PostEntity extends BaseEntity {
 
   // 추천수
   @Column({ type: 'bigint', default: 0 })
-  like: number | bigint;
+  like: string;
 
   // 공지글
   @Column({ type: 'boolean', default: false })

@@ -1,10 +1,20 @@
 import { IsNotEmpty } from 'class-validator';
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { AcademyEntity } from 'src/services/academy/entities/academy.entity';
 
 import { QuizEntity, QuizType } from '../entities/quiz.entity';
 
-export class CreateQuizDto extends PartialType(QuizEntity) {
+export class CreateQuizDto extends OmitType(QuizEntity, [
+  'academy_id',
+  'title',
+  'time',
+  'max_words',
+  'available_counts',
+]) {
+  constructor() {
+    super();
+  }
+
   // 학원 ID
   @IsNotEmpty()
   academy_id: AcademyEntity;
@@ -24,10 +34,4 @@ export class CreateQuizDto extends PartialType(QuizEntity) {
   // 사용 가능 개수
   @IsNotEmpty()
   available_counts: number;
-
-  // 방식
-  type: QuizType;
-
-  // 문항수
-  max_options: number;
 }

@@ -19,8 +19,8 @@ import { BoardStatus } from './board.entity';
 @Entity('Comment')
 export class CommentEntity extends BaseEntity {
   // 댓글 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  comment_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  comment_id: string;
 
   // 게시글 ID
   @ManyToOne((type) => PostEntity, (post) => post.post_id, {
@@ -44,7 +44,7 @@ export class CommentEntity extends BaseEntity {
 
   // 추천수
   @Column({ type: 'bigint', default: 0 })
-  like: number | bigint;
+  like: string;
 
   // 상태
   @Column({ type: 'varchar', enum: BoardStatus, default: BoardStatus.PUBLIC })

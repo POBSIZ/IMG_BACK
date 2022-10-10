@@ -40,7 +40,7 @@ export class BoardController {
 
   // 게시판 일부 목록 불러오기
   @Get('list/:id')
-  async getBoardList(@Param('id') id) {
+  async getBoardList(@Param('id') id: string) {
     return this.boardService.getBoardList(id);
   }
 

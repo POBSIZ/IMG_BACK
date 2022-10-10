@@ -16,8 +16,8 @@ import { PageEntity } from './page.entity';
 @Entity('PageBoard')
 export class PageBoardEntity extends BaseEntity {
   // 페이지 게시판 ID
-  @PrimaryGeneratedColumn()
-  PageBoard_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  PageBoard_id: string;
 
   // 페이지 ID
   @ManyToOne((type) => PageEntity, (page) => page.page_id, {

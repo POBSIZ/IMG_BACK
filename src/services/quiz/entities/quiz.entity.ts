@@ -19,8 +19,8 @@ export enum QuizType {
 @Entity('Quiz')
 export class QuizEntity extends BaseEntity {
   // 퀴즈 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  quiz_id: number | bigint;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  quiz_id: string;
 
   // 학원 ID
   @ManyToOne((type) => AcademyEntity, (academy) => academy.academy_id, {

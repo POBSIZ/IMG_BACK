@@ -30,12 +30,12 @@ export class UserEntity extends BaseEntity {
   }
 
   // 유저 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  user_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  user_id: string;
 
   // 연결 ID
   @Column({ type: 'bigint', nullable: true, default: null })
-  chain_id: bigint | number;
+  chain_id: string;
 
   // 이름
   @Column({ type: 'varchar' })

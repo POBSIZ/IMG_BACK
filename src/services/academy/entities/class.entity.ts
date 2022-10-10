@@ -14,8 +14,8 @@ import { AcademyEntity } from './academy.entity';
 @Entity('Class')
 export class ClassEntity extends BaseEntity {
   // 반 ID
-  @PrimaryGeneratedColumn()
-  class_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  class_id: string;
 
   // 학원 ID
   @ManyToOne((type) => AcademyEntity, (academy) => academy.academy_id, {

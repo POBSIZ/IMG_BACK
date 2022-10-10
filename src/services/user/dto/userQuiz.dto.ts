@@ -5,26 +5,6 @@ import { UserEntity } from '../entities/user.entity';
 import { QuizEntity } from 'src/services/quiz/entities/quiz.entity';
 import { UserQuizEntity } from '../entities/userQuiz.entity';
 
-export class CreateUserQuizDto extends PartialType(UserQuizEntity) {
-  // 회원 ID
-  @IsNotEmpty()
-  user_id: UserEntity;
+export class CreateUserQuizDto extends PartialType(UserQuizEntity) {}
 
-  // 퀴즈 ID
-  @IsNotEmpty()
-  quiz_id: QuizEntity;
-}
-
-export class UpdateUserQuizDto extends PartialType(CreateUserQuizDto) {
-  // 퀴즈 ID
-  quiz_id: QuizEntity;
-
-  // 시도횟수
-  try_count: number;
-
-  // 최고성적
-  best_solve: number;
-
-  // 최고성적
-  disabled: boolean;
-}
+export class UpdateUserQuizDto extends PartialType(CreateUserQuizDto) {}

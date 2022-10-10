@@ -15,15 +15,15 @@ import { QuizLogEntity } from './quizLog.entity';
 @Entity('ProbLog')
 export class ProbLogEntity extends BaseEntity {
   // 문제 로그 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  probLog_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  probLog_id: string;
 
   // 퀴즈 로그 ID
   @ManyToOne((type) => QuizLogEntity, (quizLog) => quizLog.quizLog_id, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'quizLog_id' })
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   quizLog_id: QuizLogEntity;
 
   // 문제 ID
@@ -31,6 +31,6 @@ export class ProbLogEntity extends BaseEntity {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'prob_id' })
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   prob_id: ProbEntity;
 }

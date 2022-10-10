@@ -19,8 +19,8 @@ export enum BoardStatus {
 @Entity('Board')
 export class BoardEntity extends BaseEntity {
   // 게시판 ID
-  @PrimaryGeneratedColumn()
-  board_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  board_id: string;
 
   // 이름
   @Column({ type: 'varchar' })

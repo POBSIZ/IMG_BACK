@@ -14,8 +14,8 @@ import { AudioEntity } from 'src/services/audio/entities/audio.entity';
 
 @Entity('Word')
 export class WordEntity extends BaseEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  word_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  word_id: string;
 
   @ManyToOne((type) => BookEntity, (book) => book.book_id, {
     onDelete: 'SET NULL',

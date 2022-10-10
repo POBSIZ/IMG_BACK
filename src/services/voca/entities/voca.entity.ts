@@ -12,8 +12,8 @@ import { UserEntity } from 'src/services/user/entities/user.entity';
 @Entity('Voca')
 export class VocaEntity extends BaseEntity {
   // 단어장 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  voca_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  voca_id: string;
 
   // 유저 ID
   @ManyToOne((type) => UserEntity, (user) => user.user_id, {

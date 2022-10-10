@@ -118,7 +118,7 @@ export class VocaService {
 
       const user = await this.userRepository
         .createQueryBuilder('usr')
-        .where('usr.user_id = :user_id', { user_id: Number(userInfo.user_id) })
+        .where('usr.user_id = :user_id', { user_id: (userInfo.user_id) })
         .getOne();
 
       const createVocaDto = new CreateVocaDto();
@@ -259,9 +259,10 @@ export class VocaService {
           [...Array(_words.length)].map((_, i) => i),
         ).slice(0, 4 - 1);
 
-        const corrWord = await this.wordRepository.findOneBy([
-          { word_id: Number(_prob.word_id.word_id) },
-        ]);
+        const corrWord = await this.wordRepository
+          .createQueryBuilder('u')
+          .where('u.word_id = :word_id', { word_id: _prob.word_id.word_id })
+          .getOne();
 
         const createOptionDto = new CreateOptionDto();
         createOptionDto.prob_id = _prob;
@@ -299,11 +300,10 @@ export class VocaService {
       // 유저퀴즈 생성
       const createUserQuizDto = new CreateUserQuizDto();
 
-      const user = await this.userRepository.findOneBy([
-        {
-          user_id: Number(userInfo.user_id),
-        },
-      ]);
+      const user = await this.userRepository
+        .createQueryBuilder('u')
+        .where('u.user_id = :user_id', { user_id: userInfo.user_id })
+        .getOne();
 
       createUserQuizDto.user_id = user;
       createUserQuizDto.quiz_id = saveQuiz;
@@ -333,7 +333,7 @@ export class VocaService {
       const userInfo: Payload = await jwt(req.headers.authorization);
       const vocaQuiz = await this.vocaQuizRepository
         .createQueryBuilder('vq')
-        .where('vq.voca_id = :voca_id', { voca_id: Number(id) })
+        .where('vq.voca_id = :voca_id', { voca_id: (id) })
         .leftJoinAndSelect('vq.userQuiz_id', 'userQuiz_id')
         .andWhere('userQuiz_id.disabled = :disabled', { disabled: false })
         .getOne();
@@ -341,7 +341,9 @@ export class VocaService {
       if (vocaQuiz) {
         vocaQuiz.userQuiz_id.disabled = true;
         await this.userQuizRepository.update(
-          Number(vocaQuiz.userQuiz_id.userQuiz_id),
+          {
+            userQuiz_id: (vocaQuiz.userQuiz_id.userQuiz_id),
+          },
           vocaQuiz.userQuiz_id,
         );
       }
@@ -358,7 +360,7 @@ export class VocaService {
 
       const vocas = await this.vocaRepository
         .createQueryBuilder('vc')
-        .where('vc.user_id = :user_id', { user_id: Number(userInfo.user_id) })
+        .where('vc.user_id = :user_id', { user_id: (userInfo.user_id) })
         .getMany();
 
       return vocas.sort((a, b) => dateSort(a.created_at, b.created_at));
@@ -375,18 +377,18 @@ export class VocaService {
 
       const voca = await this.vocaRepository
         .createQueryBuilder('vc')
-        .where('vc.voca_id = :voca_id', { voca_id: Number(id) })
+        .where('vc.voca_id = :voca_id', { voca_id: (id) })
         .getOne();
 
       const vocaWords = await this.vocaWordRepository
         .createQueryBuilder('vw')
-        .where('vw.voca_id = :voca_id', { voca_id: Number(id) })
+        .where('vw.voca_id = :voca_id', { voca_id: (id) })
         .leftJoinAndSelect('vw.word_id', 'word_id')
         .getMany();
 
       const vocaQuizCount = await this.vocaQuizRepository
         .createQueryBuilder('vq')
-        .where('vq.voca_id = :voca_id', { voca_id: Number(id) })
+        .where('vq.voca_id = :voca_id', { voca_id: (id) })
         .leftJoinAndSelect('vq.userQuiz_id', 'userQuiz_id')
         .andWhere('userQuiz_id.disabled = :disabled', { disabled: false })
         .getCount();
@@ -419,7 +421,7 @@ export class VocaService {
 
       const vocaWords = await this.vocaWordRepository
         .createQueryBuilder('vw')
-        .where('vw.voca_id = :voca_id', { voca_id: Number(id) })
+        .where('vw.voca_id = :voca_id', { voca_id: (id) })
         .leftJoinAndSelect('vw.word_id', 'word_id')
         .getMany();
 
@@ -454,7 +456,7 @@ export class VocaService {
       await (
         await this.vocaWordRepository
           .createQueryBuilder('vw')
-          .where('vw.vocaWord_id = :vocaWord_id', { vocaWord_id: Number(id) })
+          .where('vw.vocaWord_id = :vocaWord_id', { vocaWord_id: (id) })
           .getOne()
       ).remove();
 
@@ -472,14 +474,14 @@ export class VocaService {
 
       const user = await this.userRepository
         .createQueryBuilder('usr')
-        .where('usr.user_id = :user_id', { user_id: Number(userInfo.user_id) })
+        .where('usr.user_id = :user_id', { user_id: (userInfo.user_id) })
         .getOne();
 
       const vocaList = await Promise.all(
         data.map(async (_vocaId) => {
           return await this.vocaRepository
             .createQueryBuilder('vc')
-            .where('vc.voca_id = :voca_id', { voca_id: Number(_vocaId) })
+            .where('vc.voca_id = :voca_id', { voca_id: (_vocaId) })
             .getOne();
         }),
       );
@@ -493,7 +495,7 @@ export class VocaService {
       data.forEach(async (_vocaId) => {
         const vocaWords = await this.vocaWordRepository
           .createQueryBuilder('vw')
-          .where('vw.voca_id = :voca_id', { voca_id: Number(_vocaId) })
+          .where('vw.voca_id = :voca_id', { voca_id: (_vocaId) })
           .leftJoinAndSelect('vw.word_id', 'word_id')
           .getMany();
 

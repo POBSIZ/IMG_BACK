@@ -19,8 +19,8 @@ import { ProbEntity } from 'src/services/quiz/entities/prob.entity';
 @Entity('Wrong')
 export class WrongEntity extends BaseEntity {
   // 오답 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  wrong_id: bigint;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  wrong_id: string;
 
   // 오답목록 ID
   @ManyToOne((type) => WrongListEntity, (wrongList) => wrongList.wrongList_id, {

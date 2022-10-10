@@ -15,8 +15,8 @@ import { WordEntity } from './word.entity';
 @Entity('Option')
 export class OptionEntity extends BaseEntity {
   // 문항 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  book_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  book_id: string;
 
   // 문제 ID
   @ManyToOne((type) => ProbEntity, (prob) => prob.prob_id, {

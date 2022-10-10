@@ -15,8 +15,8 @@ import { VocaEntity } from './voca.entity';
 @Entity('VocaQuiz')
 export class VocaQuizEntity extends BaseEntity {
   // 단어장 퀴즈 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  vocaQuiz_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  vocaQuiz_id: string;
 
   // 단어장 ID
   @ManyToOne((type) => VocaEntity, (voca) => voca.voca_id, {

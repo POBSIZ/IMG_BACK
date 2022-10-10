@@ -115,10 +115,12 @@ export class UsersService {
       const userInfo: any = await jwt(req.headers.authorization);
       const user = await this.userRepository
         .createQueryBuilder('user')
-        .where('user.user_id = :user_id', { user_id: userInfo.user_id })
+        .where('user.user_id = :user_id', { user_id: id })
         .getOne();
 
-      this.userRepository.remove(user);
+      if (user.role !== Roles.ADMIN) {
+        this.userRepository.remove(user);
+      }
     } catch (error) {
       this.logger.error(error);
       throw new HttpException(error, 500);
@@ -210,7 +212,7 @@ export class UsersService {
         throw new UnauthorizedException('존재하지 않는 사용자입니다.');
       }
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -218,10 +220,10 @@ export class UsersService {
   // 토큰 유효성 검사
   async validate(req: IncomingMessage) {
     try {
-      const userInfo: any = await jwt(req.headers.authorization);
+      const userInfo: Payload = await jwt(req.headers.authorization);
       const user = await this.userRepository
         .createQueryBuilder('user')
-        .where('user.user_id = :user_id', { user_id: userInfo.user_id })
+        .where(`user.user_id = ${userInfo.user_id}`)
         .leftJoinAndSelect('user.academy_id', 'academy_id')
         .getOne();
 
@@ -229,7 +231,7 @@ export class UsersService {
 
       return this.jwtService.sign(payload);
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -268,7 +270,7 @@ export class UsersService {
       const password = await bcrypt.hash(data.password, SALT);
       user.password = password;
 
-      await this.userRepository.update(Number(user.user_id), user);
+      await this.userRepository.update({ user_id: user.user_id }, user);
       return true;
     } catch (error) {
       throw new HttpException(error, 500);
@@ -290,15 +292,15 @@ export class UsersService {
   ) {
     try {
       // const userInfo: any = await jwt(req.headers.authorization);
-      const user = await this.userRepository.findOneBy([
-        { user_id: Number(data.user_id) },
-      ]);
+      const user = await this.userRepository
+        .createQueryBuilder('u')
+        .where('u.user_id = :user_id', { user_id: data.user_id })
+        .getOne();
 
-      const academy = await this.academyRepository.findOneBy([
-        {
-          academy_id: Number(data.academy_id),
-        },
-      ]);
+      const academy = await this.academyRepository
+        .createQueryBuilder('u')
+        .where('u.academy_id = :academy_id', { academy_id: data.academy_id })
+        .getOne();
 
       user.name = data.name;
       user.nickname = data.nickname;
@@ -307,7 +309,7 @@ export class UsersService {
       user.grade = data.grade;
       user.phone = data.phone;
 
-      await this.userRepository.update(Number(user.user_id), user);
+      await this.userRepository.update({ user_id: user.user_id }, user);
       return 'success';
     } catch (error) {
       console.log(error);
@@ -324,19 +326,19 @@ export class UsersService {
       const userInfo: Payload = await jwt(req.headers.authorization);
 
       data.user_id.forEach(async (item) => {
-        const user = await this.userRepository.findOneBy([
-          { user_id: Number(item) },
-        ]);
+        const user = await this.userRepository
+          .createQueryBuilder('u')
+          .where('u.user_id = :user_id', { user_id: item })
+          .getOne();
 
-        const studentClass = await this.classRepository.findOneBy([
-          {
-            class_id: Number(data.class_id),
-          },
-        ]);
+        const studentClass = await this.classRepository
+          .createQueryBuilder('u')
+          .where('u.class_id = :class_id', { class_id: data.class_id })
+          .getOne();
 
         user.class_id = studentClass;
 
-        await this.userRepository.update(Number(user.user_id), user);
+        await this.userRepository.update({ user_id: user.user_id }, user);
       });
     } catch (error) {
       console.log(error);
@@ -353,28 +355,26 @@ export class UsersService {
       data.users.forEach(async (_user_id) => {
         const createUserQuizDto = new CreateUserQuizDto();
 
-        const user = await this.userRepository.findOneBy([
-          {
-            user_id: Number(_user_id),
-          },
-        ]);
+        const user = await this.userRepository
+          .createQueryBuilder('u')
+          .where('u.user_id = :user_id', { user_id: _user_id })
+          .getOne();
 
         const quizList = (
           await this.userQuizRepository
             .createQueryBuilder('uq')
-            .where('uq.user_id = :user_id', { user_id: Number(_user_id) })
+            .where('uq.user_id = :user_id', { user_id: _user_id })
             .andWhere('uq.disabled IS false')
             .leftJoinAndSelect('uq.quiz_id', 'quiz_id')
             .getMany()
-        ).map((uq) => Number(uq.quiz_id.quiz_id));
+        ).map((uq) => uq.quiz_id.quiz_id);
 
         // 퀴즈 중복 할당 방지
-        if (!quizList.includes(Number(data.quiz_id))) {
-          const quiz = await this.quizRepository.findOneBy([
-            {
-              quiz_id: Number(data.quiz_id),
-            },
-          ]);
+        if (!quizList.includes(String(data.quiz_id))) {
+          const quiz = await this.quizRepository
+            .createQueryBuilder('u')
+            .where('u.quiz_id = :quiz_id', { quiz_id: data.quiz_id })
+            .getOne();
           createUserQuizDto.user_id = user;
           createUserQuizDto.quiz_id = quiz;
 
@@ -392,16 +392,17 @@ export class UsersService {
     try {
       const userInfo: any = await jwt(req.headers.authorization);
 
-      const user = await this.userRepository.findOneBy([
-        { user_id: Number(userInfo.user_id) },
-      ]);
+      const user = await this.userRepository
+        .createQueryBuilder('u')
+        .where('u.user_id = :user_id', { user_id: userInfo.user_id })
+        .getOne();
 
       // - 유저 퀴즈 업데이트
       const _userQuiz = await this.userQuizRepository
         .createQueryBuilder('userQuiz')
         .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
         .where('userQuiz.userQuiz_id = :userQuiz_id', {
-          userQuiz_id: Number(data.userQuiz_id),
+          userQuiz_id: data.userQuiz_id,
         })
         .getOne();
 
@@ -415,7 +416,7 @@ export class UsersService {
           : Number(data.best_solve);
 
       await this.userQuizRepository.update(
-        Number(_userQuiz.userQuiz_id),
+        { userQuiz_id: _userQuiz.userQuiz_id },
         upadateUserQuizDto,
       );
 
@@ -424,7 +425,7 @@ export class UsersService {
         .createQueryBuilder('userQuiz')
         .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
         .where('userQuiz.userQuiz_id = :userQuiz_id', {
-          userQuiz_id: Number(_userQuiz.userQuiz_id),
+          userQuiz_id: _userQuiz.userQuiz_id,
         })
         .getOne();
 
@@ -482,9 +483,10 @@ export class UsersService {
 
         // -- 푼 문제 생성
         data.answerList.forEach(async (item) => {
-          const prob = await this.probRepository.findOneBy([
-            { prob_id: Number(item.prob_id) },
-          ]);
+          const prob = await this.probRepository
+            .createQueryBuilder('u')
+            .where('u.prob_id = :prob_id', { prob_id: item.prob_id })
+            .getOne();
 
           const createSolvedProbDto = new CreateSolvedProbDto();
           createSolvedProbDto.userQuiz_id = userQuiz;
@@ -495,9 +497,10 @@ export class UsersService {
 
       // - 문제 로그 생성
       data.answerList.forEach(async (item) => {
-        const prob = await this.probRepository.findOneBy([
-          { prob_id: Number(item.prob_id) },
-        ]);
+        const prob = await this.probRepository
+          .createQueryBuilder('u')
+          .where('u.prob_id = :prob_id', { prob_id: item.prob_id })
+          .getOne();
 
         const createProbLogDto = new CreateProbLogDto();
         createProbLogDto.quizLog_id = quizLog;
@@ -517,13 +520,14 @@ export class UsersService {
     try {
       const userInfo: any = await jwt(req.headers.authorization);
 
-      const userQuiz = await this.userQuizRepository.findOneBy([
-        { userQuiz_id: Number(uqid) },
-      ]);
+      const userQuiz = await this.userQuizRepository
+        .createQueryBuilder('u')
+        .where(`u.userQuiz_id = ${uqid}`)
+        .getOne();
 
       userQuiz.disabled = true;
 
-      await this.userQuizRepository.update(Number(uqid), userQuiz);
+      await this.userQuizRepository.update({ userQuiz_id: uqid }, userQuiz);
 
       return 'Success';
     } catch (error) {
@@ -563,7 +567,7 @@ export class UsersService {
         const users = await this.userRepository
           .createQueryBuilder('usr')
           .where('usr.academy_id = :academy_id', {
-            academy_id: Number(userInfo.academy_id),
+            academy_id: userInfo.academy_id,
           })
           .leftJoinAndSelect('usr.academy_id', 'academy_id')
           .leftJoinAndSelect('usr.class_id', 'class_id')
@@ -614,7 +618,7 @@ export class UsersService {
       // }
       const user = await this.userRepository
         .createQueryBuilder('usr')
-        .where('usr.user_id = :user_id', { user_id: Number(param.id) })
+        .where('usr.user_id = :user_id', { user_id: param.id })
         .leftJoinAndSelect('usr.academy_id', 'academy_id')
         .getOne();
 
@@ -636,9 +640,10 @@ export class UsersService {
     try {
       const userInfo: Payload = await jwt(req.headers.authorization);
 
-      const user = await this.userRepository.findOneBy([
-        { user_id: Number(userInfo.user_id) },
-      ]);
+      const user = await this.userRepository
+        .createQueryBuilder('u')
+        .where('u.user_id = :user_id', { user_id: userInfo.user_id })
+        .getOne();
 
       // - 오답 목록 생성
       const createWrongListDto = new CreateWrongListDto();
@@ -653,7 +658,7 @@ export class UsersService {
       wrongAnswerList.forEach(async (item) => {
         const prob = await this.probRepository
           .createQueryBuilder('prob')
-          .where('prob.prob_id = :prob_id', { prob_id: Number(item.prob_id) })
+          .where('prob.prob_id = :prob_id', { prob_id: item.prob_id })
           .getOne();
 
         const createWrongDto = new CreateWrongDto();
@@ -676,9 +681,10 @@ export class UsersService {
 
       // - 문제 로그 생성
       data.answerList.forEach(async (item) => {
-        const prob = await this.probRepository.findOneBy([
-          { prob_id: Number(item.prob_id) },
-        ]);
+        const prob = await this.probRepository
+          .createQueryBuilder('u')
+          .where('u.prob_id = :prob_id', { prob_id: item.prob_id })
+          .getOne();
 
         const createProbLogDto = new CreateProbLogDto();
         createProbLogDto.quizLog_id = quizLog;
@@ -700,7 +706,7 @@ export class UsersService {
         .leftJoinAndSelect('userQuiz.user_id', 'user_id')
         .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
         .where('userQuiz.user_id = :user_id', {
-          user_id: Number(userInfo.user_id),
+          user_id: userInfo.user_id,
         })
         .getMany();
 
@@ -710,7 +716,7 @@ export class UsersService {
             .createQueryBuilder('quizLog')
             .leftJoinAndSelect('quizLog.userQuiz_id', 'userQuiz_id')
             .where('quizLog.userQuiz_id = :userQuiz_id', {
-              userQuiz_id: Number(_userQuiz.userQuiz_id),
+              userQuiz_id: _userQuiz.userQuiz_id,
             })
             .getMany();
 
@@ -732,7 +738,7 @@ export class UsersService {
 
       const noneUqLogs = await this.quizLogRepository
         .createQueryBuilder('ql')
-        .where('ql.user_id = :user_id', { user_id: Number(userInfo.user_id) })
+        .where('ql.user_id = :user_id', { user_id: userInfo.user_id })
         .andWhere('ql.userQuiz_id IS NULL')
         .getMany();
 
@@ -741,14 +747,14 @@ export class UsersService {
           const probCount = await this.probLogRepository
             .createQueryBuilder('pl')
             .where('pl.quizLog_id = :quizLog_id', {
-              quizLog_id: Number(item.quizLog_id),
+              quizLog_id: item.quizLog_id,
             })
             .getCount();
 
           return {
-            quiz_id: NaN,
+            quiz_id: String(NaN),
             quizLog_id: item.quizLog_id,
-            userQuiz_id: NaN,
+            userQuiz_id: String(NaN),
             date: item.created_at,
             title: item.quiz_title,
             score: item.score,
@@ -774,7 +780,7 @@ export class UsersService {
         .leftJoinAndSelect('userQuiz.user_id', 'user_id')
         .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
         .where('userQuiz.user_id = :user_id', {
-          user_id: Number(id),
+          user_id: id,
         })
         .getMany();
 
@@ -784,7 +790,7 @@ export class UsersService {
             .createQueryBuilder('quizLog')
             .leftJoinAndSelect('quizLog.userQuiz_id', 'userQuiz_id')
             .where('quizLog.userQuiz_id = :userQuiz_id', {
-              userQuiz_id: Number(_userQuiz.userQuiz_id),
+              userQuiz_id: _userQuiz.userQuiz_id,
             })
             .getMany();
 
@@ -806,7 +812,7 @@ export class UsersService {
 
       const noneUqLogs = await this.quizLogRepository
         .createQueryBuilder('ql')
-        .where('ql.user_id = :user_id', { user_id: Number(id) })
+        .where('ql.user_id = :user_id', { user_id: id })
         .andWhere('ql.userQuiz_id IS NULL')
         .getMany();
 
@@ -815,14 +821,14 @@ export class UsersService {
           const probCount = await this.probLogRepository
             .createQueryBuilder('pl')
             .where('pl.quizLog_id = :quizLog_id', {
-              quizLog_id: Number(item.quizLog_id),
+              quizLog_id: item.quizLog_id,
             })
             .getCount();
 
           return {
-            quiz_id: NaN,
+            quiz_id: 'NaN',
             quizLog_id: item.quizLog_id,
-            userQuiz_id: NaN,
+            userQuiz_id: 'NaN',
             date: item.created_at,
             title: item.quiz_title,
             score: item.score,
@@ -852,7 +858,7 @@ export class UsersService {
 
       const quizLog = await this.quizLogRepository
         .createQueryBuilder('quizLog')
-        .where('quizLog.quizLog_id = :quizLog_id', { quizLog_id: Number(id) })
+        .where(`quizLog.quizLog_id = ${id}`)
         .leftJoinAndSelect('quizLog.wrongList_id', 'wrongList_id')
         .leftJoinAndSelect('quizLog.userQuiz_id', 'userQuiz_id')
         .leftJoinAndSelect('userQuiz_id.quiz_id', 'quiz_id')
@@ -860,9 +866,7 @@ export class UsersService {
 
       const wrongs = await this.wrongRepository
         .createQueryBuilder('wrong')
-        .where('wrong.wrongList_id = :wrongList_id', {
-          wrongList_id: Number(quizLog.wrongList_id.wrongList_id),
-        })
+        .where(`wrong.wrongList_id = ${quizLog.wrongList_id.wrongList_id}`)
         .leftJoinAndSelect('wrong.prob_id', 'prob_id')
         .getMany();
 
@@ -874,7 +878,7 @@ export class UsersService {
       // - 문제 로그 불러오기
       const probLogs = await this.probLogRepository
         .createQueryBuilder('pl')
-        .where('pl.quizLog_id = :quizLog_id', { quizLog_id: Number(id) })
+        .where(`pl.quizLog_id = ${id}`)
         .leftJoinAndSelect('pl.prob_id', 'prob_id')
         .leftJoinAndSelect('prob_id.word_id', 'word_id')
         .getMany();
@@ -886,24 +890,18 @@ export class UsersService {
           const isWrong = worngIdList.includes(_probLog.prob_id.prob_id);
 
           // -- 오답 단어 생성
-          const wrongWord = wrongs.filter(
-            (wrong) =>
-              Number(wrong.prob_id.prob_id) ===
-              Number(_probLog.prob_id.prob_id),
-          )[0]?.wrong_word;
+          const wrongWord = wrongs.filter((wrong) => {
+            return wrong.prob_id.prob_id === _probLog.prob_id.prob_id;
+          })[0]?.wrong_word;
 
           const audio = await this.audioRepository
             .createQueryBuilder('audio')
-            .where('audio.word_id = :word_id', {
-              word_id: _probLog.prob_id.word_id.word_id,
-            })
+            .where(`audio.word_id = ${_probLog.prob_id.word_id.word_id}`)
             .getOne();
 
           const options = await this.optionRepository
             .createQueryBuilder('option')
-            .where('option.prob_id = :prob_id', {
-              prob_id: Number(_probLog.prob_id.prob_id),
-            })
+            .where(`option.prob_id = ${_probLog.prob_id.prob_id}`)
             .leftJoinAndSelect('option.word_id', 'word_id')
             .getMany();
 
@@ -922,7 +920,7 @@ export class UsersService {
 
           return {
             id: i,
-            prob_id: Number(_probLog.prob_id),
+            prob_id: _probLog.prob_id.prob_id,
             answer: answer,
             correctWordId: optionList.indexOf(_probLog.prob_id.word_id.meaning),
             correctWord: _probLog.prob_id.word_id.word,
@@ -934,7 +932,7 @@ export class UsersService {
       );
 
       const data: QuizResultType = {
-        id: Number(quizLog.quizLog_id),
+        id: quizLog.quizLog_id,
         title: quizLog.quiz_title,
         list: list,
         corrCount: quizLog.score,
@@ -952,14 +950,14 @@ export class UsersService {
     try {
       const quizLog = await this.quizLogRepository
         .createQueryBuilder('quizLog')
-        .where('quizLog.quizLog_id = :quizLog_id', { quizLog_id: Number(id) })
+        .where('quizLog.quizLog_id = :quizLog_id', { quizLog_id: id })
         .leftJoinAndSelect('quizLog.wrongList_id', 'wrongList_id')
         .getOne();
 
       const wrongs = await this.wrongRepository
         .createQueryBuilder('wrong')
         .where('wrong.wrongList_id = :wrongList_id', {
-          wrongList_id: Number(quizLog.wrongList_id.wrongList_id),
+          wrongList_id: quizLog.wrongList_id.wrongList_id,
         })
         .leftJoinAndSelect('wrong.prob_id', 'prob_id')
         .leftJoinAndSelect('prob_id.word_id', 'word_id')
@@ -1001,7 +999,10 @@ export class UsersService {
 
       targetUser.chain_id = userInfo.user_id;
 
-      await this.userRepository.update(Number(targetUser.user_id), targetUser);
+      await this.userRepository.update(
+        { user_id: targetUser.user_id },
+        targetUser,
+      );
 
       return 'Success';
     } catch (error) {
@@ -1019,20 +1020,22 @@ export class UsersService {
 
       const user = await this.userRepository
         .createQueryBuilder('user')
-        .where('user.user_id = :user_id', { user_id: Number(userInfo.user_id) })
+        .where('user.user_id = :user_id', { user_id: userInfo.user_id })
         .getOne();
 
       user.chain_id = null;
 
       const targetUser = await this.userRepository
         .createQueryBuilder('user')
-        .where('user.user_id = :user_id', { user_id: Number(data.target) })
+        .where('user.user_id = :user_id', { user_id: data.target })
         .getOne();
 
       if (data.status) {
-        targetUser.chain_id = Number(userInfo.user_id);
+        targetUser.chain_id = userInfo.user_id;
         await this.userRepository.update(
-          Number(targetUser.user_id),
+          {
+            user_id: targetUser.user_id,
+          },
           targetUser,
         );
       }

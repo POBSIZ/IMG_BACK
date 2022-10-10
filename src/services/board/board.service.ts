@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
@@ -10,9 +10,12 @@ import { PostEntity } from './entities/post.entity';
 
 import jwt from 'jwt-decode';
 import { Payload } from '../user/jwt/jwt.payload';
+import { kStringMaxLength } from 'buffer';
 
 @Injectable()
 export class BoardService {
+  private readonly logger = new Logger();
+
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
@@ -33,6 +36,7 @@ export class BoardService {
       // console.log(createBoardDto);
       return await this.boardRepository.save(createDto);
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -42,6 +46,7 @@ export class BoardService {
     try {
       return await this.boardRepository.find({ cache: 1000 });
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -51,12 +56,13 @@ export class BoardService {
     try {
       return await this.postRepository
         .createQueryBuilder('post')
-        .where('post.board_id = :board_id', { board_id: Number(id) })
+        .where(`post.board_id = ${id}`)
         .leftJoinAndSelect('post.user_id', 'user_id')
         .leftJoinAndSelect('post.board_id', 'board_id')
         .cache(true)
         .getMany();
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -68,13 +74,15 @@ export class BoardService {
 
       const createPostDto = new CreatePostDto();
 
-      createPostDto.user_id = await this.userRepository.findOneBy([
-        { user_id: Number(userInfo.user_id) },
-      ]);
+      createPostDto.user_id = await this.userRepository
+        .createQueryBuilder('u')
+        .where(`u.user_id = ${userInfo.user_id}`)
+        .getOne();
 
-      createPostDto.board_id = await this.boardRepository.findOneBy([
-        { board_id: Number(data.board_id) },
-      ]);
+      createPostDto.board_id = await this.boardRepository
+        .createQueryBuilder('b')
+        .where(`b.board_id = ${data.board_id}`)
+        .getOne();
 
       createPostDto.title = data.title;
       createPostDto.content = data.content;
@@ -82,7 +90,7 @@ export class BoardService {
 
       await this.postRepository.save(createPostDto);
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -90,34 +98,40 @@ export class BoardService {
   // 게시글 수정
   async patchPost(data: Partial<PostEntity>, req: IncomingMessage) {
     try {
-      const createPost = await this.postRepository.findOneBy([
-        {
-          post_id: Number(data.post_id),
-        },
-      ]);
+      const createPost = await this.postRepository
+        .createQueryBuilder('p')
+        .where('p.post_id = :post_id', { post_id: data.post_id })
+        .getOne();
 
-      createPost.board_id = await this.boardRepository.findOneBy([
-        { board_id: Number(data.board_id) },
-      ]);
+      createPost.board_id = await this.boardRepository
+        .createQueryBuilder('b')
+        .where('b.board_id = :board_id', { board_id: data.board_id.board_id })
+        .getOne();
 
       createPost.title = data.title;
       createPost.content = data.content;
       createPost.thumbnail = data.thumbnail ?? null;
 
-      await this.postRepository.update(Number(createPost.post_id), createPost);
+      await this.postRepository.update(
+        { post_id: createPost.post_id },
+        createPost,
+      );
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
 
   async deletePost(id, req) {
     try {
-      const post = await this.postRepository.findOneBy([
-        { post_id: Number(id) },
-      ]);
+      const post = await this.postRepository
+        .createQueryBuilder('p')
+        .where('p.post_id = :post_id', { post_id: id })
+        .getOne();
+
       await this.postRepository.remove(post);
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }
@@ -127,11 +141,12 @@ export class BoardService {
     try {
       return await this.postRepository
         .createQueryBuilder('post')
-        .where('post.post_id = :post_id', { post_id: Number(id) })
+        .where('post.post_id = :post_id', { post_id: id })
         .leftJoinAndSelect('post.user_id', 'user_id')
         .cache(true)
         .getOne();
     } catch (error) {
+      this.logger.error(error);
       throw new HttpException(error, 500);
     }
   }

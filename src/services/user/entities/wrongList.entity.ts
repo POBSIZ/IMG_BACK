@@ -17,8 +17,8 @@ import { UserQuizEntity } from './userQuiz.entity';
 @Entity('WrongList')
 export class WrongListEntity extends BaseEntity {
   // 오답 목록 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  wrongList_id: bigint;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  wrongList_id: string;
 
   // 유저퀴즈 ID
   @ManyToOne((type) => UserQuizEntity, (userQuiz) => userQuiz.userQuiz_id, {

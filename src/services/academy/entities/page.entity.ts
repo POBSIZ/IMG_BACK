@@ -14,15 +14,15 @@ import { AcademyEntity } from './academy.entity';
 @Entity('Page')
 export class PageEntity extends BaseEntity {
   // 페이지 ID
-  @PrimaryGeneratedColumn()
-  page_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  page_id: string;
 
   // 학원 ID
   @ManyToOne((type) => AcademyEntity, (academy) => academy.academy_id, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'academy_id' })
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   academy_id: AcademyEntity;
 
   // 제목

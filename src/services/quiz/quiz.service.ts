@@ -82,11 +82,10 @@ export class QuizsService {
   async createBook(file: Express.Multer.File, body, req: IncomingMessage) {
     try {
       const userInfo: any = await jwt(req.headers.authorization);
-      const academy = await this.academyRepository.findOneBy([
-        {
-          academy_id: Number(userInfo.academy_id),
-        },
-      ]);
+      const academy = await this.academyRepository
+        .createQueryBuilder('a')
+        .where(`a.academy_id = ${userInfo.academy_id}`)
+        .getOne();
       const createBookDto = new CreateBookDto();
 
       createBookDto.title = decodeURIComponent(body.name);
@@ -120,6 +119,7 @@ export class QuizsService {
 
       // return rows;
     } catch (error) {
+      console.log(error);
       throw new HttpException(error, 500);
     }
   }
@@ -211,11 +211,12 @@ export class QuizsService {
   async createQuiz(data: QuizCreateDataType, req: IncomingMessage) {
     try {
       const userInfo: any = await jwt(req.headers.authorization);
-      const academy = await this.academyRepository.findOneBy([
-        {
-          academy_id: Number(userInfo.academy_id),
-        },
-      ]);
+      const academy = await this.academyRepository
+        .createQueryBuilder('a')
+        .where('a.academy_id = :academy_id', {
+          academy_id: userInfo.academy_id,
+        })
+        .getOne();
       const createQuizDto = new CreateQuizDto();
 
       // 퀴즈 생성
@@ -237,9 +238,10 @@ export class QuizsService {
           [...Array(_words.length)].map((_, i) => i),
         ).slice(0, data.max_options - 1);
 
-        const corrWord = await this.wordRepository.findOneBy([
-          { word_id: Number(_prob.word_id.word_id) },
-        ]);
+        const corrWord = await this.wordRepository
+          .createQueryBuilder('a')
+          .where('a.word_id = :word_id', { word_id: _prob.word_id.word_id })
+          .getOne();
 
         const createOptionDto = new CreateOptionDto();
         createOptionDto.prob_id = _prob;
@@ -270,7 +272,7 @@ export class QuizsService {
       // 문제 & 문항 생성
       const words = await this.wordRepository
         .createQueryBuilder('book')
-        .where('book.book_id = :book_id', { book_id: Number(data.book_id) })
+        .where('book.book_id = :book_id', { book_id: data.book_id })
         .getMany();
 
       const sliceWords = words.slice(data.scope[0] - 1, data.scope[1]);
@@ -288,11 +290,11 @@ export class QuizsService {
     try {
       const quiz = await this.quizRepository
         .createQueryBuilder('quiz')
-        .where('quiz.quiz_id = :quiz_id', { quiz_id: Number(id) })
+        .where('quiz.quiz_id = :quiz_id', { quiz_id: id })
         .getOne();
       quiz.disabled = true;
 
-      await this.quizRepository.update(Number(quiz.quiz_id), quiz);
+      await this.quizRepository.update({ quiz_id: quiz.quiz_id }, quiz);
       return `Removed ${quiz.title} Quiz`;
     } catch (error) {
       throw new HttpException(error, 500);
@@ -306,7 +308,9 @@ export class QuizsService {
 
       const myQuizs = await this.userQuizRepository
         .createQueryBuilder('userQuiz')
-        .where('userQuiz.user_id = :user_id', { user_id: userInfo.user_id })
+        .where('userQuiz.user_id = :user_id', {
+          user_id: userInfo.user_id,
+        })
         .andWhere('userQuiz.disabled = :disabled', { disabled: false })
         .leftJoinAndSelect('userQuiz.quiz_id', 'quiz_id')
         .getMany();
@@ -316,14 +320,14 @@ export class QuizsService {
           const voca = await this.vocaQuizRepository
             .createQueryBuilder('vq')
             .where('vq.quiz_id = :quiz_id', {
-              quiz_id: Number(item.quiz_id.quiz_id),
+              quiz_id: item.quiz_id.quiz_id,
             })
             .leftJoinAndSelect('vq.voca_id', 'voca_id')
             .getOne();
 
           return {
-            userQuiz_id: Number(item.userQuiz_id),
-            quiz_id: Number(item.quiz_id.quiz_id),
+            userQuiz_id: item.userQuiz_id,
+            quiz_id: item.quiz_id.quiz_id,
             title: item.quiz_id.title,
             date: item.recent_date.toUTCString(),
             tryCount: item.try_count,
@@ -331,7 +335,7 @@ export class QuizsService {
             maxCount: item.quiz_id.available_counts,
             disabled: item.disabled,
             is_voca: item.is_voca,
-            voca_id: Number(voca?.voca_id.voca_id),
+            voca_id: voca?.voca_id.voca_id,
           };
         }),
       );
@@ -346,18 +350,18 @@ export class QuizsService {
   async getQuizProbAll(id, uqid, req: IncomingMessage) {
     const quiz = await this.quizRepository
       .createQueryBuilder('quiz')
-      .where('quiz.quiz_id = :quiz_id', { quiz_id: Number(id) })
+      .where('quiz.quiz_id = :quiz_id', { quiz_id: id })
       .getOne();
 
     const probs = await this.probRepository
       .createQueryBuilder('prob')
-      .where('prob.quiz_id = :quiz_id', { quiz_id: Number(id) })
+      .where('prob.quiz_id = :quiz_id', { quiz_id: id })
       .leftJoinAndSelect('prob.word_id', 'word_id')
       .getMany();
 
     const solvedProb = await this.solvedProbRepository
       .createQueryBuilder('sp')
-      .where('sp.userQuiz_id = :userQuiz_id', { userQuiz_id: Number(uqid) })
+      .where('sp.userQuiz_id = :userQuiz_id', { userQuiz_id: uqid })
       .leftJoinAndSelect('sp.prob_id', 'prob_id')
       .getManyAndCount();
 
@@ -385,14 +389,14 @@ export class QuizsService {
       makeProbs.map(async (item) => {
         const options = await this.optionRepository
           .createQueryBuilder('option')
-          .where('option.prob_id = :prob_id', { prob_id: Number(item.prob_id) })
+          .where('option.prob_id = :prob_id', { prob_id: item.prob_id })
           .leftJoinAndSelect('option.word_id', 'word_id')
           .getMany();
 
         const audio = await this.audioRepository
           .createQueryBuilder('audio')
           .where('audio.word_id = :word_id', {
-            word_id: Number(item.word_id.word_id),
+            word_id: item.word_id.word_id,
           })
           .getOne();
 
@@ -423,12 +427,12 @@ export class QuizsService {
   async getRetry(id, req: IncomingMessage) {
     const quizLog = await this.quizLogRepository
       .createQueryBuilder('ql')
-      .where('ql.quizLog_id = :quizLog_id', { quizLog_id: Number(id) })
+      .where('ql.quizLog_id = :quizLog_id', { quizLog_id: id })
       .getOne();
 
     const probLogs = await this.probLogRepository
       .createQueryBuilder('pl')
-      .where('pl.quizLog_id = :quizLog_id', { quizLog_id: Number(id) })
+      .where('pl.quizLog_id = :quizLog_id', { quizLog_id: id })
       .leftJoinAndSelect('pl.prob_id', 'prob_id')
       .leftJoinAndSelect('prob_id.word_id', 'word_id')
       .getMany();

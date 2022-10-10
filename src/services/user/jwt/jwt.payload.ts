@@ -5,10 +5,10 @@ import { UserEntity } from '../entities/user.entity';
 
 export interface Payload {
   // 유저 ID
-  user_id: bigint | number;
+  user_id: string;
 
   // 연결 ID
-  chain_id: bigint | number;
+  chain_id: string;
 
   // 이름
   name: string;
@@ -29,7 +29,7 @@ export interface Payload {
 
   grade: string; // 학년
 
-  class_id: number | bigint | ClassEntity; // 반 ID
+  class_id: string | ClassEntity; // 반 ID
 
   address: string; // 주소
 
@@ -39,7 +39,7 @@ export interface Payload {
 
   academy_admin: boolean; // 학원 권한
 
-  academy_id: number | bigint | AcademyEntity; // 학원 ID
+  academy_id: string | AcademyEntity; // 학원 ID
 
   isValidate: boolean;
 

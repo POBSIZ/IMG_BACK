@@ -20,8 +20,8 @@ import { ProbEntity } from 'src/services/quiz/entities/prob.entity';
 @Entity('QuizLog')
 export class QuizLogEntity extends BaseEntity {
   // 퀴즈로그 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  quizLog_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  quizLog_id: string;
 
   // 유저 ID
   @ManyToOne((type) => UserEntity, (user) => user.user_id, {

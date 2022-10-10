@@ -80,9 +80,7 @@ export class AcademyService {
       const userInfo: Payload = await jwt(req.headers.authorization);
       const user = await this.userRepository
         .createQueryBuilder('user')
-        .where('user.user_id = :user_id', {
-          user_id: Number(userInfo.user_id),
-        })
+        .where(`user.user_id = ${userInfo.user_id}`)
         .leftJoinAndSelect('user.academy_id', 'academy_id')
         .getOne();
 
@@ -144,7 +142,7 @@ export class AcademyService {
       // - 원장 학원 정보 주입 업데이트
       user.academy_admin = true;
       user.academy_id = lastAcademy;
-      await this.userRepository.update(Number(user.user_id), user);
+      await this.userRepository.update({ user_id: user.user_id }, user);
 
       // - 업데이트된 유저 정보 전송
       const payload: Payload = setPayload(user);
@@ -160,9 +158,7 @@ export class AcademyService {
     try {
       const academy = await this.academyRepository
         .createQueryBuilder('aca')
-        .where('aca.name = :name', {
-          name: academyId,
-        })
+        .where(`aca.name = ${academyId}`)
         .getOne();
 
       // - 학원 페이지 생성
@@ -200,9 +196,7 @@ export class AcademyService {
 
       const pageBoards = await this.pageBoardRepository
         .createQueryBuilder('pb')
-        .where('pb.page_id = :page_id', {
-          page_id: lastPage.page_id,
-        })
+        .where(`pb.page_id = ${lastPage.page_id}`)
         .leftJoinAndSelect('pb.board_id', 'board_id')
         .getMany();
 
@@ -220,16 +214,12 @@ export class AcademyService {
       const page = await this.pageRepository
         .createQueryBuilder('page')
         .leftJoinAndSelect('page.academy_id', 'academy_id')
-        .where('academy_id.name = :name', {
-          name: academyId,
-        })
+        .where(`academy_id.name = ${academyId}`)
         .getOne();
 
       const pageBoards = await this.pageBoardRepository
         .createQueryBuilder('pb')
-        .where('pb.page_id = :page_id', {
-          page_id: page.page_id,
-        })
+        .where(`pb.page_id = ${page.page_id}`)
         .leftJoinAndSelect('pb.board_id', 'board_id')
         .getMany();
 
@@ -245,9 +235,10 @@ export class AcademyService {
   // 학원 정보 수정
   async patchAcademy(reqData: Partial<AcademyEntity>, req: IncomingMessage) {
     try {
-      const academy = await this.academyRepository.findOneBy([
-        { academy_id: Number(reqData.academy_id) },
-      ]);
+      const academy = await this.academyRepository
+        .createQueryBuilder('a')
+        .where(`a.academy_id = ${reqData.academy_id}`)
+        .getOne();
 
       academy.name = reqData.name;
       academy.address = reqData.address;
@@ -255,7 +246,10 @@ export class AcademyService {
       academy.zip = reqData.zip;
       academy.phone = reqData.phone;
 
-      await this.academyRepository.update(Number(academy.academy_id), academy);
+      await this.academyRepository.update(
+        { academy_id: academy.academy_id },
+        academy,
+      );
       return 'success';
     } catch (error) {
       this.logger.error(error);
@@ -272,9 +266,7 @@ export class AcademyService {
         academys.map(async (item) => {
           const userCount = await this.userRepository
             .createQueryBuilder('usr')
-            .where('usr.academy_id = :academy_id', {
-              academy_id: Number(item.academy_id),
-            })
+            .where(`usr.academy_id = ${item.academy_id}`)
             .getCount();
 
           return {
@@ -298,11 +290,10 @@ export class AcademyService {
     try {
       const userInfo: Payload = await jwt(req.headers.authorization);
 
-      const academy = await this.academyRepository.findOneBy([
-        {
-          academy_id: Number(userInfo.academy_id),
-        },
-      ]);
+      const academy = await this.academyRepository
+        .createQueryBuilder('a')
+        .where(`a.academy_id = ${userInfo.academy_id}`)
+        .getOne();
 
       const createClassDto = new CreateClassDto();
       createClassDto.academy_id = academy;
@@ -324,9 +315,7 @@ export class AcademyService {
 
       const classes = await this.classRepository
         .createQueryBuilder('class')
-        .where('class.academy_id = :academy_id', {
-          academy_id: Number(userInfo.academy_id),
-        })
+        .where(`class.academy_id = ${userInfo.academy_id}`)
         .getMany();
 
       return classes;
@@ -343,16 +332,14 @@ export class AcademyService {
 
       const classes = await this.classRepository
         .createQueryBuilder('class')
-        .where('class.academy_id = :academy_id', {
-          academy_id: Number(id),
-        })
+        .where(`class.academy_id = ${id}`)
         .getMany();
 
       const userCountClasses = await Promise.all(
         classes.map(async (item) => {
           const userCount = await this.userRepository
             .createQueryBuilder('usr')
-            .where('usr.class_id = :class_id', { class_id: item.class_id })
+            .where(`usr.class_id = ${item.class_id}`)
             .getCount();
 
           return {
@@ -375,10 +362,8 @@ export class AcademyService {
 
       const selectClass = await this.classRepository
         .createQueryBuilder('class')
-        .where('class.academy_id = :academy_id', {
-          academy_id: Number(userInfo.academy_id),
-        })
-        .andWhere('class.class_id = :class_id', { class_id: Number(class_id) })
+        .where(`class.academy_id = ${userInfo.academy_id}`)
+        .andWhere(`class.class_id = ${class_id}`)
         .getOne();
 
       await this.classRepository.remove(selectClass);
@@ -409,11 +394,13 @@ export class AcademyService {
   async info(req: IncomingMessage) {
     try {
       const userInfo: Payload = await jwt(req.headers.authorization);
-      const academy = await this.academyRepository.findOneBy([
-        {
-          academy_id: Number(userInfo.academy_id),
-        },
-      ]);
+      const academy = await this.academyRepository
+        .createQueryBuilder('a')
+        .where('a.academy_id =: academy_id', {
+          academy_id: userInfo.academy_id,
+        })
+        .getOne();
+
       return academy;
     } catch (error) {
       this.logger.error(error);
@@ -424,11 +411,11 @@ export class AcademyService {
   // 특정 학원 정보 불러오기
   async getInfoById(id: string) {
     try {
-      const academy = await this.academyRepository.findOneBy([
-        {
-          academy_id: Number(id),
-        },
-      ]);
+      const academy = await this.academyRepository
+        .createQueryBuilder('a')
+        .where('a.academy_id =: academy_id', { academy_id: id })
+        .getOne();
+
       return academy;
     } catch (error) {
       throw new HttpException(error, 500);
@@ -443,7 +430,7 @@ export class AcademyService {
       const users = await this.userRepository
         .createQueryBuilder('user')
         .where('user.academy_id = :academy_id', {
-          academy_id: Number(userInfo.academy_id),
+          academy_id: userInfo.academy_id,
         })
         .leftJoinAndSelect('user.academy_id', 'academy_id')
         .leftJoinAndSelect('user.class_id', 'class_id')
@@ -465,7 +452,7 @@ export class AcademyService {
     try {
       const students = this.userRepository
         .createQueryBuilder('usr')
-        .where('usr.academy_id = :academy_id', { academy_id: Number(id) })
+        .where('usr.academy_id = :academy_id', { academy_id: id })
         .leftJoinAndSelect('usr.class_id', 'class_id')
         .getMany();
       return students;
@@ -482,7 +469,7 @@ export class AcademyService {
         _users.map(async (user) => {
           const userQuizs = await this.userQuizRepository
             .createQueryBuilder('uq')
-            .where('uq.user_id = :user_id', { user_id: Number(user.user_id) })
+            .where('uq.user_id = :user_id', { user_id: user.user_id })
             .leftJoinAndSelect('uq.quiz_id', 'quiz_id')
             .getMany();
 
@@ -512,7 +499,7 @@ export class AcademyService {
       const classes = await this.classRepository
         .createQueryBuilder('class')
         .where('class.academy_id = :academy_id', {
-          academy_id: Number(userInfo.academy_id),
+          academy_id: userInfo.academy_id,
         })
         .getMany();
 
@@ -523,7 +510,7 @@ export class AcademyService {
           const users = await this.userRepository
             .createQueryBuilder('user')
             .where('user.class_id = :class_id', {
-              class_id: Number(item.class_id),
+              class_id: item.class_id,
             })
             .getMany();
 
@@ -538,7 +525,7 @@ export class AcademyService {
       const users = await this.userRepository
         .createQueryBuilder('user')
         .where('user.academy_id = :academy_id', {
-          academy_id: Number(userInfo.academy_id),
+          academy_id: userInfo.academy_id,
         })
         .andWhere('user.class_id IS NULL')
         .getMany();
@@ -571,7 +558,7 @@ export class AcademyService {
             .leftJoinAndSelect('quizLog.userQuiz_id', 'userQuiz_id')
             .leftJoinAndSelect('userQuiz_id.quiz_id', 'quiz_id')
             .where('quizLog.user_id = :user_id', {
-              user_id: Number(user.user_id),
+              user_id: user.user_id,
             })
             .andWhere(
               `quizLog.created_at BETWEEN (CURRENT_TIMESTAMP - interval '7 day') AND CURRENT_TIMESTAMP`,
@@ -583,7 +570,7 @@ export class AcademyService {
               const probLogsCount = await this.probLogRepository
                 .createQueryBuilder('pl')
                 .where('pl.quizLog_id = :quizLog_id', {
-                  quizLog_id: Number(_quizLog.quizLog_id),
+                  quizLog_id: _quizLog.quizLog_id,
                 })
                 .getCount();
 
@@ -619,7 +606,7 @@ export class AcademyService {
           _users.flatMap(async (_usr) => {
             const _quizLogs = await this.quizLogRepository
               .createQueryBuilder('ql')
-              .where('ql.user_id = :user_id', { user_id: Number(_usr.user_id) })
+              .where('ql.user_id = :user_id', { user_id: _usr.user_id })
               .andWhere(
                 `ql.created_at BETWEEN (CURRENT_TIMESTAMP - interval '7 day') AND CURRENT_TIMESTAMP`,
               )
@@ -645,7 +632,7 @@ export class AcademyService {
           ? await this.userRepository
               .createQueryBuilder('user')
               .where('user.academy_id = :academy_id', {
-                academy_id: Number(userInfo.academy_id),
+                academy_id: userInfo.academy_id,
               })
               .leftJoinAndSelect('user.class_id', 'class_id')
               .getMany()
@@ -653,7 +640,7 @@ export class AcademyService {
               await this.userRepository
                 .createQueryBuilder('user')
                 .where('user.user_id = :user_id', {
-                  user_id: Number(id),
+                  user_id: id,
                 })
                 .leftJoinAndSelect('user.class_id', 'class_id')
                 .getOne(),
@@ -685,7 +672,7 @@ export class AcademyService {
       const quizs = await this.quizRepository
         .createQueryBuilder('quiz')
         .where('quiz.academy_id = :academy_id ', {
-          academy_id: Number(userInfo.academy_id),
+          academy_id: userInfo.academy_id,
         })
         .andWhere('quiz.disabled = :disabled', { disabled: false })
         .getMany();
@@ -705,7 +692,7 @@ export class AcademyService {
       const books = await this.bookRepository
         .createQueryBuilder('book')
         .where('book.academy_id = :academy_id ', {
-          academy_id: Number(userInfo.academy_id),
+          academy_id: userInfo.academy_id,
         })
         .getMany();
 

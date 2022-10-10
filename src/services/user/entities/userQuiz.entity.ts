@@ -16,8 +16,8 @@ import { QuizEntity } from 'src/services/quiz/entities/quiz.entity';
 @Entity('UserQuiz')
 export class UserQuizEntity extends BaseEntity {
   // 유저 퀴즈 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  userQuiz_id: bigint | number;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  userQuiz_id: string;
 
   // 회원 ID
   @ManyToOne((type) => UserEntity, (user) => user.user_id, {

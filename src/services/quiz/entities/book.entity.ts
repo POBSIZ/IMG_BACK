@@ -13,8 +13,8 @@ import {
 @Entity('Book')
 export class BookEntity extends BaseEntity {
   // 책 ID
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  book_id: number | bigint;
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  book_id: string;
 
   // 학원 ID
   @ManyToOne((type) => AcademyEntity, (academy) => academy.academy_id, {
